@@ -1,437 +1,547 @@
 <!DOCTYPE html>
-<html lang="fr" class="h-full">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Control</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            light: '#4f46e5',
-                            dark: '#6366f1'
-                        },
-                        secondary: {
-                            light: '#f43f5e',
-                            dark: '#fb7185'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-full flex flex-col">
-    <!-- Auth Modal -->
-    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-md w-full mx-4">
-            <h2 class="text-2xl font-bold mb-6 text-center">Connexion</h2>
-            <form id="loginForm" class="space-y-4">
-                <div>
-                    <label for="email" class="block text-sm font-medium mb-1">Email</label>
-                    <input type="email" id="email" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
-                </div>
-                <div>
-                    <label for="password" class="block text-sm font-medium mb-1">Mot de passe</label>
-                    <input type="password" id="password" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
-                </div>
-                <button type="submit" class="w-full bg-primary-light dark:bg-primary-dark text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200">Se connecter</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Main App -->
-    <div id="app" class="hidden flex-1 container mx-auto px-4 py-8">
-        <!-- Header -->
-        <header class="flex justify-between items-center mb-8">
-            <div>
-                <h1 class="text-3xl font-bold">Smart Relay Control</h1>
-                <p class="text-gray-600 dark:text-gray-400">Contrôle de 8 relais via ESP32</p>
-            </div>
-            <div class="flex items-center space-x-4">
-                
-                            <div class="p-4">
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" id="toggleTheme" class="hidden" />
-                  <span class="w-10 h-6 bg-gray-300 rounded-full relative">
-                    <span class="dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition"></span>
-                  </span>
-                  <span>Mode sombre</span>
-                </label>
-              </div>
-
-
-                <button id="logoutBtn" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
-            </div>
-        </header>
-
-        <!-- Relay Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Relay cards will be dynamically inserted here -->
-        </div>
-
-        <!-- Scheduler Section -->
-                  <!-- Formulaire ajout programme -->
-          <div class="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md max-w-md mx-auto mt-6">
-            <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Ajouter un programme horaire</h3>
-            <form id="scheduleForm" class="space-y-4">
-              <div>
-                <label for="relayNumber" class="block mb-1 text-gray-700 dark:text-gray-300">Numéro relais (1-8)</label>
-                <input type="number" id="relayNumber" min="1" max="8" required class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200" />
-              </div>
-              <div>
-                <label for="action" class="block mb-1 text-gray-700 dark:text-gray-300">Action</label>
-                <select id="action" required class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200">
-                  <option value="on">Allumer</option>
-                  <option value="off">Éteindre</option>
-                </select>
-              </div>
-              <div>
-                <label for="time" class="block mb-1 text-gray-700 dark:text-gray-300">Heure (HH:mm)</label>
-                <input type="time" id="time" required class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200" />
-              </div>
-              <button type="submit" class="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition">Ajouter</button>
-            </form>
-            <div id="scheduleMsg" class="mt-2 text-sm"></div>
-          </div>
-
-        <!-- Add Schedule Modal -->
-        <div id="scheduleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-md w-full mx-4">
-                <h2 class="text-2xl font-bold mb-6">Nouveau programme</h2>
-                <form id="scheduleForm" class="space-y-4">
-                    <div>
-                        <label for="scheduleRelay" class="block text-sm font-medium mb-1">Relais</label>
-                        <select id="scheduleRelay" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
-                            <option value="">Sélectionner un relais</option>
-                            <option value="1">Relais 1</option>
-                            <option value="2">Relais 2</option>
-                            <option value="3">Relais 3</option>
-                            <option value="4">Relais 4</option>
-                            <option value="5">Relais 5</option>
-                            <option value="6">Relais 6</option>
-                            <option value="7">Relais 7</option>
-                            <option value="8">Relais 8</option>
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label for="scheduleOnTime" class="block text-sm font-medium mb-1">Heure d'allumage</label>
-                            <input type="time" id="scheduleOnTime" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
-                        </div>
-                        <div>
-                            <label for="scheduleOffTime" class="block text-sm font-medium mb-1">Heure d'extinction</label>
-                            <input type="time" id="scheduleOffTime" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <button type="button" id="cancelScheduleBtn" class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200">Annuler</button>
-                        <button type="submit" class="bg-primary-light dark:bg-primary-dark text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200">Enregistrer</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Notifications -->
-        <div id="notifications" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
-    </div>
-
-   <!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-
-<!-- Font Awesome pour les icônes -->
-<script src="https://kit.fontawesome.com/your_kit_code.js" crossorigin="anonymous"></script>
-<script>
-// --- Configuration Firebase ---
-const firebaseConfig = {
-  apiKey: "AIzaSyAJcmaVULTXVdwi0OX6TfJAaGGV3zQZGN0",
-  authDomain: "fin-etude-e51b2.firebaseapp.com",
-  databaseURL: "https://fin-etude-e51b2-default-rtdb.firebaseio.com",
-  projectId: "fin-etude-e51b2",
-  storageBucket: "fin-etude-e51b2.appspot.com",
-  messagingSenderId: "266327798549",
-  appId: "1:266327798549:web:f20ac04b94ab2d8a19ef1c",
-  measurementId: "G-FQV4XHD101"
-};
-
-// --- Initialisation Firebase ---
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const database = firebase.database();
-
-// --- Sélecteurs DOM ---
-const loginForm = document.getElementById("loginForm");
-const logoutBtn = document.getElementById("logoutBtn");
-const authModal = document.getElementById("authModal");
-const app = document.getElementById("app");
-const relayGrid = document.querySelector(".grid");
-const addScheduleBtn = document.getElementById("addScheduleBtn");
-
-// --- Icônes relais ---
-const relayIcons = [
-  "fa-lightbulb", "fa-fan", "fa-plug", "fa-tv",
-  "fa-thermometer-half", "fa-water", "fa-lock", "fa-bell"
-];
-
-// --- Surveillance de la connexion ---
-auth.onAuthStateChanged(user => {
-  console.log("User state changed:", user);
-  if (user) {
-    authModal.classList.add("hidden");
-    app.classList.remove("hidden");
-    startDashboard();
-  } else {
-    app.classList.add("hidden");
-    authModal.classList.remove("hidden");
-  }
-});
-
-// --- Connexion ---
-loginForm.addEventListener("submit", e => {
-  e.preventDefault();
-  const email = loginForm["email"].value;
-  const password = loginForm["password"].value;
-  auth.signInWithEmailAndPassword(email, password)
-    .catch(error => alert("Erreur connexion : " + error.message));
-});
-
-// --- Déconnexion ---
-logoutBtn.addEventListener("click", () => auth.signOut());
-
-// --- Démarrage de l'app ---
-function startDashboard() {
-  loadRelays();
-  setupRelayActions();
-  setupScheduleSystem();
-  startUsageMonitoring();
-  restoreTheme();
-}
-
-// --- Gestion toggle mode sombre/clair ---
-const toggleThemeCheckbox = document.getElementById("toggleTheme");
-
-function applyTheme(dark) {
-  if (dark) {
-    document.documentElement.classList.add("dark");
-  } else {
-    document.documentElement.classList.remove("dark");
-  }
-  localStorage.setItem("theme", dark ? "dark" : "light");
-}
-
-function loadTheme() {
-  const stored = localStorage.getItem("theme");
-  if (stored === "dark") {
-    toggleThemeCheckbox.checked = true;
-    applyTheme(true);
-  } else if (stored === "light") {
-    toggleThemeCheckbox.checked = false;
-    applyTheme(false);
-  } else {
-    // Par défaut système
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    toggleThemeCheckbox.checked = prefersDark;
-    applyTheme(prefersDark);
-  }
-}
-
-toggleThemeCheckbox.addEventListener("change", () => {
-  applyTheme(toggleThemeCheckbox.checked);
-});
-
-loadTheme();
-
-// --- Gestion formulaire ajout programme ---
-const scheduleForm = document.getElementById("scheduleForm");
-const scheduleMsg = document.getElementById("scheduleMsg");
-
-scheduleForm.addEventListener("submit", e => {
-  e.preventDefault();
-
-  const relay = parseInt(scheduleForm.relayNumber.value);
-  const action = scheduleForm.action.value;
-  const time = scheduleForm.time.value;
-
-  if (relay < 1 || relay > 8) {
-    scheduleMsg.textContent = "Le numéro du relais doit être entre 1 et 8.";
-    scheduleMsg.className = "text-red-500 mt-2";
-    return;
-  }
-
-  if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
-    scheduleMsg.textContent = "Heure invalide, format HH:mm attendu.";
-    scheduleMsg.className = "text-red-500 mt-2";
-    return;
-  }
-
-  const newSchedule = { relay, action, time };
-
-  database.ref('schedules').push(newSchedule)
-    .then(() => {
-      scheduleMsg.textContent = "Programme ajouté avec succès !";
-      scheduleMsg.className = "text-green-500 mt-2";
-      scheduleForm.reset();
-    })
-    .catch(err => {
-      scheduleMsg.textContent = "Erreur ajout programme : " + err.message;
-      scheduleMsg.className = "text-red-500 mt-2";
-    });
-});
-
-
-// --- Chargement des relais ---
-function loadRelays() {
-  database.ref("relays").on("value", snapshot => {
-    const relays = snapshot.val() || {};
-    renderRelays(relays);
-  });
-}
-
-// --- Affichage relais ---
-function renderRelays(relays) {
-  relayGrid.innerHTML = "";
-
-  for (let i = 1; i <= 8; i++) {
-    const r = relays[i] || { name: `Relais ${i}`, state: false };
-    const icon = relayIcons[i - 1] || "fa-bolt";
-
-    relayGrid.innerHTML += `
-      <div class="card bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
-        <div class="flex justify-between mb-2">
-          <h4>${r.name}</h4>
-          <span class="${r.state ? 'text-green-500' : 'text-gray-400'}">${r.state ? 'ON' : 'OFF'}</span>
-        </div>
-        <div class="text-center text-4xl ${r.state ? 'text-yellow-400' : 'text-gray-500'}">
-          <i class="fas ${icon}"></i>
-        </div>
-        <div class="flex justify-between mt-4">
-          <button data-relay="${i}" data-action="toggle" class="btn-toggle bg-primary text-white px-4 py-2 rounded">
-            <i class="fas fa-power-off"></i>
-          </button>
-          <button data-relay="${i}" data-action="rename" class="bg-gray-300 p-2 rounded"><i class="fas fa-edit"></i></button>
-        </div>
-        <div class="mt-2 text-sm text-gray-500" id="relay-${i}-duration">Durée : 00:00:00</div>
-      </div>
-    `;
-  }
-}
-
-// --- Actions boutons relais ---
-function setupRelayActions() {
-  document.addEventListener("click", e => {
-    const btn = e.target.closest("button[data-action]");
-    if (!btn) return;
-
-    const relay = parseInt(btn.dataset.relay);
-    const action = btn.dataset.action;
-
-    if (action === "toggle") toggleRelay(relay);
-    else if (action === "rename") renameRelay(relay);
-  });
-}
-
-// --- Basculer relais ---
-function toggleRelay(relay) {
-  const ref = database.ref("relays/" + relay);
-  ref.once("value").then(snapshot => {
-    const currentState = snapshot.val()?.state || false;
-    ref.update({
-      state: !currentState,
-      changedBy: auth.currentUser?.email || "inconnu",
-      lastChanged: firebase.database.ServerValue.TIMESTAMP
-    })
-    .then(() => console.log(`Relais ${relay} state changé à ${!currentState}`))
-    .catch(err => alert("Erreur update relais : " + err.message));
-  });
-}
-
-// --- Renommer relais ---
-function renameRelay(relay) {
-  const newName = prompt("Nouveau nom du relais ?");
-  if (newName) {
-    database.ref("relays/" + relay).update({ name: newName });
-  }
-}
-
-// --- Monitoring durée allumage + auto-extinction ---
-const relayUsage = {};
-
-function startUsageMonitoring() {
-  setInterval(() => {
-    database.ref("relays").once("value", snapshot => {
-      const relays = snapshot.val() || {};
-      const now = Date.now();
-
-      for (let i = 1; i <= 8; i++) {
-        const relay = relays[i];
-        if (!relay) continue;
-
-        if (relay.state) {
-          if (!relayUsage[i]) relayUsage[i] = now;
-          const diff = now - relayUsage[i];
-
-          if (diff > 5 * 60 * 60 * 1000) {  // 5h en ms
-            database.ref(`relays/${i}`).update({ state: false });
-            alert(`Relais ${i} éteint automatiquement après 5h.`);
-            relayUsage[i] = null;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 Relay Control Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary': '#1e40af',
+            'secondary': '#3b82f6',
+            'success': '#10b981',
+            'danger': '#ef4444',
+            'warning': '#f59e0b',
+            'dark': '#1e293b',
           }
-
-          const seconds = Math.floor(diff / 1000);
-          const el = document.getElementById(`relay-${i}-duration`);
-          if(el) el.textContent = "Durée : " + formatDuration(seconds);
-        } else {
-          relayUsage[i] = null;
-          const el = document.getElementById(`relay-${i}-duration`);
-          if(el) el.textContent = "Durée : 00:00:00";
         }
       }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f0f9ff 0%, hwb(204 88% 0%) 100%);
+      min-height: 100vh;
+    }
+    
+    .relay-card {
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .relay-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
+    
+    .status-on {
+       background-color: #64748b;
+     
+    }
+    
+    .status-off {
+      background-color: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+    
+    .toggle-btn {
+      transition: all 0.2s ease;
+    }
+    
+    .toggle-btn:active {
+      transform: scale(0.95);
+    }
+    
+    .login-card {
+      animation: fadeIn 0.5s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .power-icon {
+      transition: all 0.3s ease;
+    }
+    
+    .relay-on .power-icon {
+      color: #10b981;
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body class="bg-gray-50 py-8 px-4">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-10">
+      <div class="flex justify-center items-center mb-4">
+        <div class="bg-blue-100 p-3 rounded-full mr-4">
+          <i class="fas fa-microchip text-blue-600 text-3xl"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Dashboard</h1>
+      </div>
+      <p class="text-gray-600 max-w-2xl mx-auto">
+        Controled your home
+      </p>
+    </div>
+    
+    <!-- Login Form -->
+    <div id="loginForm" class="login-card bg-white rounded-2xl shadow-xl p-8 max-w-md mx-auto">
+      <div class="text-center mb-8">
+        <div class="bg-blue-100 p-4 rounded-full inline-block mb-4">
+          <i class="fas fa-lock text-blue-600 text-3xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800">Secure Login</h2>
+        <p class="text-gray-600 mt-2">Enter your credentials to access the relay controls</p>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-gray-700 font-medium mb-2" for="email">Email</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-envelope text-gray-400"></i>
+            </div>
+            <input 
+              type="email" 
+              id="email" 
+              placeholder="Enter your email" 
+              class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              value="abc@gmail.com"
+            >
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-gray-700 font-medium mb-2" for="password">Password</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-lock text-gray-400"></i>
+            </div>
+            <input 
+              type="password" 
+              id="password" 
+              placeholder="Enter your password" 
+              class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              value="90009550"
+            >
+          </div>
+        </div>
+        
+        <button id="loginBtn" class="w-full bg-primary hover:bg-blue-800 text-white font-semibold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-[1.02] mt-6">
+          <i class="fas fa-sign-in-alt mr-2"></i> Login to Dashboard
+        </button>
+      </div>
+    </div>
+    
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden">
+      <!-- Controls Header -->
+      <div class="bg-white rounded-2xl shadow-md p-6 mb-8 flex flex-col md:flex-row justify-between items-center">
+        <div class="flex items-center mb-4 md:mb-0">
+          <div class="bg-blue-100 p-3 rounded-full mr-4">
+            <i class="fas fa-sliders-h text-blue-600 text-xl"></i>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-800">Relay Controls</h2>
+        </div>
+        
+        <div class="flex flex-wrap gap-3">
+          <button id="allOnBtn" class="bg-success hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition flex items-center">
+            <i class="fas fa-power-off mr-2"></i> All ON
+          </button>
+          <button id="allOffBtn" class="bg-danger hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition flex items-center">
+            <i class="fas fa-power-off mr-2"></i> All OFF
+          </button>
+          <button id="logoutBtn" class="bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition flex items-center">
+            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+          </button>
+        </div>
+      </div>
+      
+      <!-- Relay Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <!-- Relay 1 -->
+        <div class="relay-card bg-white rounded-xl p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-xl font-semibold text-gray-800">Relay 1</h3>
+              <div class="flex items-center mt-1">
+                <span class="status-indicator status-off" id="indicator1"></span>
+                <span class="text-gray-600" id="status1">OFF</span>
+              </div>
+            </div>
+            <div class="bg-blue-100 p-2 rounded-lg">
+              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
+            </div>
+          </div>
+          <button id="btn1" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
+            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
+          </button>
+        </div>
+        
+        <!-- Relay 2 -->
+        <div class="relay-card bg-white rounded-xl p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-xl font-semibold text-gray-800">Relay 2</h3>
+              <div class="flex items-center mt-1">
+                <span class="status-indicator status-off" id="indicator2"></span>
+                <span class="text-gray-600" id="status2">OFF</span>
+              </div>
+            </div>
+            <div class="bg-blue-100 p-2 rounded-lg">
+              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
+            </div>
+          </div>
+          <button id="btn2" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
+            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
+          </button>
+        </div>
+        
+        <!-- Relay 3 -->
+        <div class="relay-card bg-white rounded-xl p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-xl font-semibold text-gray-800">Relay 3</h3>
+              <div class="flex items-center mt-1">
+                <span class="status-indicator status-off" id="indicator3"></span>
+                <span class="text-gray-600" id="status3">OFF</span>
+              </div>
+            </div>
+            <div class="bg-blue-100 p-2 rounded-lg">
+              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
+            </div>
+          </div>
+          <button id="btn3" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
+            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
+          </button>
+        </div>
+        
+        <!-- Relay 4 -->
+        <div class="relay-card bg-white rounded-xl p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-xl font-semibold text-gray-800">Relay 4</h3>
+              <div class="flex items-center mt-1">
+                <span class="status-indicator status-off" id="indicator4"></span>
+                <span class="text-gray-600" id="status4">OFF</span>
+              </div>
+            </div>
+            <div class="bg-blue-100 p-2 rounded-lg">
+              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
+            </div>
+          </div>
+          <button id="btn4" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
+            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
+          </button>
+        </div>
+        
+        <!-- Relay 5 -->
+        <div class="relay-card bg-white rounded-xl p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-xl font-semibold text-gray-800">Relay 5</h3>
+              <div class="flex items-center mt-1">
+                <span class="status-indicator status-off" id="indicator5"></span>
+                <span class="text-gray-600" id="status5">OFF</span>
+              </div>
+            </div>
+            <div class="bg-blue-100 p-2 rounded-lg">
+              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
+            </div>
+          </div>
+          <button id="btn5" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
+            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
+          </button>
+        </div>
+        
+        <!-- Relay 6 -->
+        <div class="relay-card bg-white rounded-xl p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-xl font-semibold text-gray-800">Relay 6</h3>
+              <div class="flex items-center mt-1">
+                <span class="status-indicator status-off" id="indicator6"></span>
+                <span class="text-gray-600" id="status6">OFF</span>
+              </div>
+            </div>
+            <div class="bg-blue-100 p-2 rounded-lg">
+              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
+            </div>
+          </div>
+          <button id="btn6" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
+            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
+          </button>
+        </div>
+        
+        <!-- Relay 7 -->
+        <div class="relay-card bg-white rounded-xl p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-xl font-semibold text-gray-800">Relay 7</h3>
+              <div class="flex items-center mt-1">
+                <span class="status-indicator status-off" id="indicator7"></span>
+                <span class="text-gray-600" id="status7">OFF</span>
+              </div>
+            </div>
+            <div class="bg-blue-100 p-2 rounded-lg">
+              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
+            </div>
+          </div>
+          <button id="btn7" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
+            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
+          </button>
+        </div>
+        
+        <!-- Relay 8 -->
+        <div class="relay-card bg-white rounded-xl p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-xl font-semibold text-gray-800">Relay 8</h3>
+              <div class="flex items-center mt-1">
+                <span class="status-indicator status-off" id="indicator8"></span>
+                <span class="text-gray-600" id="status8">OFF</span>
+              </div>
+            </div>
+            <div class="bg-blue-100 p-2 rounded-lg">
+              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
+            </div>
+          </div>
+          <button id="btn8" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
+            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
+          </button>
+        </div>
+      </div>
+      
+      <!-- System Status -->
+      <div class="bg-white rounded-2xl shadow-md p-6">
+        <div class="flex items-center mb-4">
+          <div class="bg-blue-100 p-3 rounded-full mr-4">
+            <i class="fas fa-heartbeat text-blue-600 text-xl"></i>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-800">System Status</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-blue-50 rounded-xl p-5">
+            <div class="flex items-center">
+              <div class="bg-blue-100 p-3 rounded-lg mr-4">
+                <i class="fas fa-microchip text-blue-600 text-xl"></i>
+              </div>
+              <div>
+                <p class="text-gray-600">Controller</p>
+                <p class="text-lg font-semibold">ESP32</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-green-50 rounded-xl p-5">
+            <div class="flex items-center">
+              <div class="bg-green-100 p-3 rounded-lg mr-4">
+                <i class="fas fa-plug text-green-600 text-xl"></i>
+              </div>
+              <div>
+                <p class="text-gray-600">Relays Active</p>
+                <p class="text-lg font-semibold"><span id="activeRelays">0</span>/8</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-purple-50 rounded-xl p-5">
+            <div class="flex items-center">
+              <div class="bg-purple-100 p-3 rounded-lg mr-4">
+                <i class="fas fa-network-wired text-purple-600 text-xl"></i>
+              </div>
+              <div>
+                <p class="text-gray-600">Connection</p>
+                <p class="text-lg font-semibold text-green-600">Online</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-gray-600">
+      <div class="flex justify-center space-x-6 mb-4">
+        <a href="#" class="text-gray-500 hover:text-primary transition">
+          <i class="fab fa-github text-xl"></i>
+        </a>
+        <a href="#" class="text-gray-500 hover:text-primary transition">
+          <i class="fab fa-youtube text-xl"></i>
+        </a>
+        <a href="#" class="text-gray-500 hover:text-primary transition">
+          <i class="fab fa-twitter text-xl"></i>
+        </a>
+      </div>
+      <p>Created by <span class="font-semibold text-primary">POWERTEC</span> | SMART HOME</p>
+    </footer>
+  </div>
+  
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+    apiKey: "AIzaSyB1Dfgal-Lp5fs5ClMMMhlDTGxzMxS4f5E",
+    authDomain: "proacademia-134e6.firebaseapp.com",
+    databaseURL: "https://proacademia-134e6-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "proacademia-134e6",
+    storageBucket: "proacademia-134e6.firebasestorage.app",
+    messagingSenderId: "753251437128",
+    appId: "1:753251437128:web:88b88844e0ed2e8125a67d",
+    measurementId: "G-KGRHW9L9C9"
+};
+
+    firebase.initializeApp(firebaseConfig);
+
+    // Predefined login credentials
+    const allowedEmail = "rommygerard3@gmail.com";
+    const allowedPassword = "Rommy0";
+
+    const loginForm = document.getElementById("loginForm");
+    const dashboard = document.getElementById("dashboard");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const allOnBtn = document.getElementById("allOnBtn");
+    const allOffBtn = document.getElementById("allOffBtn");
+
+    loginBtn.addEventListener("click", () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        alert("Please enter email and password.");
+        return;
+      }
+
+      // Check hardcoded credentials first
+      if(email === allowedEmail && password === allowedPassword){
+        // Sign in with Firebase
+        firebase.auth().signInWithEmailAndPassword(email, password)
+          .then(userCredential => {
+            console.log("Signed in as", userCredential.user.email);
+            loginForm.classList.add("hidden");
+            dashboard.classList.remove("hidden");
+            startRelayControl();
+          })
+          .catch(error => {
+            alert("Firebase login failed: " + error.message);
+          });
+      } else {
+        alert("Invalid email or password.");
+      }
     });
-  }, 1000);
+
+    function startRelayControl() {
+      const db = firebase.database();
+
+      const relays = [
+        { id: 1, path: "relay1" },
+        { id: 2, path: "relay2" },
+        { id: 3, path: "relay3" },
+        { id: 4, path: "relay4" },
+        { id: 5, path: "relay5" },
+        { id: 6, path: "relay6" },
+        { id: 7, path: "relay7" },
+        { id: 8, path: "relay8" }
+      ];
+
+      relays.forEach(relay => {
+       const statusText = document.getElementById(`status${relay.id}`);
+      const indicator = document.getElementById(`indicator${relay.id}`);
+      const toggleButton = document.getElementById(`btn${relay.id}`);
+      const relayRef = db.ref("/" + relay.path);
+
+
+        relayRef.on("value", (snapshot) => {
+          const state = snapshot.val();
+          statusText.innerText = state ? "OFF" : "ON";
+          
+          if (state) {
+            statusText.classList.remove("text-gray-600");
+            statusText.classList.add("text-green-600");
+            indicator.classList.remove("status-off");
+            indicator.classList.add("status-on");
+            toggleButton.classList.remove("bg-gray-200", "hover:bg-gray-300", "text-gray-800");
+            toggleButton.classList.add("bg-green-100", "hover:bg-green-200", "text-green-800");
+            toggleButton.parentElement.classList.add("relay-on");
+          } else {
+            statusText.classList.remove("text-green-600");
+            statusText.classList.add("text-gray-600");
+            indicator.classList.remove("status-on");
+            indicator.classList.add("status-off");
+            toggleButton.classList.remove("bg-green-100", "hover:bg-green-200", "text-green-800");
+            toggleButton.classList.add("bg-gray-200", "hover:bg-gray-300", "text-gray-800");
+            toggleButton.parentElement.classList.remove("relay-on");
+          }
+          
+          // Update active relays count
+          updateActiveRelays();
+        });
+
+        toggleButton.onclick = () => {
+          relayRef.get().then(snap => {
+            relayRef.set(!snap.val());
+          });
+        };
+      });
+
+      function updateActiveRelays() {
+  let activeCount = 0;
+  relays.forEach(relay => {
+    const statusText = document.getElementById(`status${relay.id}`);
+    if (statusText.innerText === "ON") activeCount++;
+  });
+  document.getElementById("activeRelays").innerText = activeCount;
 }
 
-function formatDuration(seconds) {
-  const h = String(Math.floor(seconds / 3600)).padStart(2, "0");
-  const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
-  const s = String(seconds % 60).padStart(2, "0");
-  return `${h}:${m}:${s}`;
-}
 
-// --- Gestion des programmes horaires ---
-function setupScheduleSystem() {
-  if (!addScheduleBtn) return;
+      allOnBtn.onclick = () => {
+        relays.forEach(relay => {
+          db.ref("/" + relay.path).set(true);
+        });
+      };
 
-  addScheduleBtn.addEventListener('click', () => {
-    const time = prompt("Heure au format HH:mm (ex: 19:00) ?");
-    const relay = parseInt(prompt("Numéro du relais (1-8) ?"));
-    const action = prompt("Action ('on' ou 'off') ?").toLowerCase();
-
-    if (!time || !relay || !['on','off'].includes(action)) {
-      alert("Données invalides !");
-      return;
+      allOffBtn.onclick = () => {
+        relays.forEach(relay => {
+          db.ref("/" + relay.path).set(false);
+        });
+      };
     }
 
-    const newSchedule = { time, relay, action };
-
-    database.ref('schedules').push(newSchedule)
-      .then(() => alert("Programme ajouté !"))
-      .catch(err => alert("Erreur ajout programme : " + err.message));
-  });
-}
-
-
-</script>
-
+    logoutBtn.onclick = () => {
+      firebase.auth().signOut()
+        .then(() => {
+          dashboard.classList.add("hidden");
+          loginForm.classList.remove("hidden");
+          document.getElementById("email").value = "";
+          document.getElementById("password").value = "";
+        })
+        .catch(error => {
+          alert("Logout failed: " + error.message);
+        });
+    };
+  </script>
 </body>
 </html>
