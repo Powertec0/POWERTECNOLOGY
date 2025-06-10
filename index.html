@@ -4,8 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ESP32 Relay Control Dashboard</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <!--<script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://kit.fontawesome.com/your_kit_code.js" crossorigin="anonymous"></script>-->
+
   <script>
     tailwind.config = {
       theme: {
@@ -86,8 +94,9 @@
     }
   </style>
 </head>
-<body class="bg-gray-50 py-8 px-4">
-  <div class="max-w-7xl mx-auto">
+<body class="bg-gray-50 py-8">
+  <div class="container mx-auto px-4">
+
     <!-- Header -->
     <div class="text-center mb-10">
       <div class="flex justify-center items-center mb-4">
@@ -542,6 +551,12 @@
           alert("Logout failed: " + error.message);
         });
     };
+
+     if (localStorage.getItem("theme") === "dark" || (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
   </script>
 </body>
 </html>
