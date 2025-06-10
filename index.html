@@ -1,472 +1,436 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="h-full">
 <head>
-  <meta charset="UTF-8" />
-  <title>ESP32 Toggle Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            light: '#4f46e5',
+                            dark: '#6366f1'
+                        },
+                        secondary: {
+                            light: '#f43f5e',
+                            dark: '#fb7185'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-full flex flex-col">
+    <!-- Auth Modal -->
+    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-md w-full mx-4">
+            <h2 class="text-2xl font-bold mb-6 text-center">Connexion</h2>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="email" class="block text-sm font-medium mb-1">Email</label>
+                    <input type="email" id="email" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium mb-1">Mot de passe</label>
+                    <input type="password" id="password" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
+                </div>
+                <button type="submit" class="w-full bg-primary-light dark:bg-primary-dark text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200">Se connecter</button>
+            </form>
+        </div>
+    </div>
 
-<title>CONTROLE DOMOTIQUE</title>
+    <!-- Main App -->
+    <div id="app" class="hidden flex-1 container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold">Smart Relay Control</h1>
+                <p class="text-gray-600 dark:text-gray-400">Contrôle de 8 relais via ESP32</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                
+                            <div class="p-4">
+                <label class="flex items-center space-x-2 cursor-pointer">
+                  <input type="checkbox" id="toggleTheme" class="hidden" />
+                  <span class="w-10 h-6 bg-gray-300 rounded-full relative">
+                    <span class="dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition"></span>
+                  </span>
+                  <span>Mode sombre</span>
+                </label>
+              </div>
 
-<!-- Google Fonts (Segoe UI équivalent) -->
-<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&display=swap" rel="stylesheet">
 
-<!-- Font Awesome Icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Vu8+C2jPiIDQyTsyQ+O5NUnxiD2PJJcO1iMHUeZdc4K0yKIE7FQZtvZf3lzRt9O5uK+eMLmDr5K+wJ0G4oKZzg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                <button id="logoutBtn" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
 
-<!-- Firebase JS SDK (Compat v9) -->
+        <!-- Relay Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Relay cards will be dynamically inserted here -->
+        </div>
+
+        <!-- Scheduler Section -->
+                  <!-- Formulaire ajout programme -->
+          <div class="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md max-w-md mx-auto mt-6">
+            <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Ajouter un programme horaire</h3>
+            <form id="scheduleForm" class="space-y-4">
+              <div>
+                <label for="relayNumber" class="block mb-1 text-gray-700 dark:text-gray-300">Numéro relais (1-8)</label>
+                <input type="number" id="relayNumber" min="1" max="8" required class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200" />
+              </div>
+              <div>
+                <label for="action" class="block mb-1 text-gray-700 dark:text-gray-300">Action</label>
+                <select id="action" required class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                  <option value="on">Allumer</option>
+                  <option value="off">Éteindre</option>
+                </select>
+              </div>
+              <div>
+                <label for="time" class="block mb-1 text-gray-700 dark:text-gray-300">Heure (HH:mm)</label>
+                <input type="time" id="time" required class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200" />
+              </div>
+              <button type="submit" class="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition">Ajouter</button>
+            </form>
+            <div id="scheduleMsg" class="mt-2 text-sm"></div>
+          </div>
+
+        <!-- Add Schedule Modal -->
+        <div id="scheduleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-md w-full mx-4">
+                <h2 class="text-2xl font-bold mb-6">Nouveau programme</h2>
+                <form id="scheduleForm" class="space-y-4">
+                    <div>
+                        <label for="scheduleRelay" class="block text-sm font-medium mb-1">Relais</label>
+                        <select id="scheduleRelay" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
+                            <option value="">Sélectionner un relais</option>
+                            <option value="1">Relais 1</option>
+                            <option value="2">Relais 2</option>
+                            <option value="3">Relais 3</option>
+                            <option value="4">Relais 4</option>
+                            <option value="5">Relais 5</option>
+                            <option value="6">Relais 6</option>
+                            <option value="7">Relais 7</option>
+                            <option value="8">Relais 8</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="scheduleOnTime" class="block text-sm font-medium mb-1">Heure d'allumage</label>
+                            <input type="time" id="scheduleOnTime" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
+                        </div>
+                        <div>
+                            <label for="scheduleOffTime" class="block text-sm font-medium mb-1">Heure d'extinction</label>
+                            <input type="time" id="scheduleOffTime" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button type="button" id="cancelScheduleBtn" class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200">Annuler</button>
+                        <button type="submit" class="bg-primary-light dark:bg-primary-dark text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-200">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div id="notifications" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
+    </div>
+
+   <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
-<!-- jQuery (facultatif si tu l'utilises dans d'autres parties) -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-8Z/ep90XeY3d+TzZvu5oODHc95EprrYxN7EO2qUZ+xM=" crossorigin="anonymous"></script>
+<!-- Font Awesome pour les icônes -->
+<script src="https://kit.fontawesome.com/your_kit_code.js" crossorigin="anonymous"></script>
+<script>
+// --- Configuration Firebase ---
+const firebaseConfig = {
+  apiKey: "AIzaSyAJcmaVULTXVdwi0OX6TfJAaGGV3zQZGN0",
+  authDomain: "fin-etude-e51b2.firebaseapp.com",
+  databaseURL: "https://fin-etude-e51b2-default-rtdb.firebaseio.com",
+  projectId: "fin-etude-e51b2",
+  storageBucket: "fin-etude-e51b2.appspot.com",
+  messagingSenderId: "266327798549",
+  appId: "1:266327798549:web:f20ac04b94ab2d8a19ef1c",
+  measurementId: "G-FQV4XHD101"
+};
 
+// --- Initialisation Firebase ---
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const database = firebase.database();
 
-  <!-- FontAwesome & jQuery -->
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-  <link href="https://use.fontawesome.com/releases/v5.0.4/css/all.css" rel="stylesheet">
+// --- Sélecteurs DOM ---
+const loginForm = document.getElementById("loginForm");
+const logoutBtn = document.getElementById("logoutBtn");
+const authModal = document.getElementById("authModal");
+const app = document.getElementById("app");
+const relayGrid = document.querySelector(".grid");
+const addScheduleBtn = document.getElementById("addScheduleBtn");
 
-  <!-- Firebase SDKs (compat) -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+// --- Icônes relais ---
+const relayIcons = [
+  "fa-lightbulb", "fa-fan", "fa-plug", "fa-tv",
+  "fa-thermometer-half", "fa-water", "fa-lock", "fa-bell"
+];
 
-  <style>
-    body {
-  font-family: 'Segoe UI', sans-serif;
-  background: #031321;
-  margin: 0;
-  padding: 0;
-  text-align: center;
+// --- Surveillance de la connexion ---
+auth.onAuthStateChanged(user => {
+  console.log("User state changed:", user);
+  if (user) {
+    authModal.classList.add("hidden");
+    app.classList.remove("hidden");
+    startDashboard();
+  } else {
+    app.classList.add("hidden");
+    authModal.classList.remove("hidden");
+  }
+});
+
+// --- Connexion ---
+loginForm.addEventListener("submit", e => {
+  e.preventDefault();
+  const email = loginForm["email"].value;
+  const password = loginForm["password"].value;
+  auth.signInWithEmailAndPassword(email, password)
+    .catch(error => alert("Erreur connexion : " + error.message));
+});
+
+// --- Déconnexion ---
+logoutBtn.addEventListener("click", () => auth.signOut());
+
+// --- Démarrage de l'app ---
+function startDashboard() {
+  loadRelays();
+  setupRelayActions();
+  setupScheduleSystem();
+  startUsageMonitoring();
+  restoreTheme();
 }
 
-.wrapper {
-  height: 100vh;
-  width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
+// --- Gestion toggle mode sombre/clair ---
+const toggleThemeCheckbox = document.getElementById("toggleTheme");
+
+function applyTheme(dark) {
+  if (dark) {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+  localStorage.setItem("theme", dark ? "dark" : "light");
 }
 
-.progress {
-  background: transparent;
-  padding: 30px;
-  border-radius: 20px;
-  width: 200px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.icon1 {
-  color: #fff;
-  display: block;
-  margin-bottom: 20px;
-}
-
-.toggle-btn, .toggle-btn1, .toggle-btn2, .toggle-btn3 {
-  width: 80px;
-  height: 40px;
-  background: gray;
-  border-radius: 30px;
-  padding: 5px;
-  transition: all 300ms ease-in-out;
-  cursor: pointer;
-  display: block;
-  
-}
-
-.toggle-btn > .inner-circle,
-.toggle-btn1 > .inner-circle,
-.toggle-btn2 > .inner-circle,
-.toggle-btn3 > .inner-circle {
-  width: 40px;
-  height: 40px;
-  background: #fff;
-  border-radius: 50%;
-  transition: all 300ms ease-in-out;
-}
-
-.toggle-btn.active {
-  background: #2169f3;
-  box-shadow: 0 0 10px #2196f3, 0 0 40px #2196f3, 0 0 80px #2196f3;
-  transition-delay: 0.5s;
-}
-
-.toggle-btn1.active {
-  background: #f3219c;
-  box-shadow: 0 0 10px #f3219c, 0 0 40px #f3219c, 0 0 80px #f3219c;
-  transition-delay: 0.5s;
-}
-
-.toggle-btn2.active {
-  background: #21ecf3;
-  box-shadow: 0 0 10px #21ecf3, 0 0 40px #21ecf3, 0 0 80px #21ecf3;
-  transition-delay: 0.5s;
-}
-
-.toggle-btn3.active {
-  background: #a3f321;
-  box-shadow: 0 0 10px #a3f321, 0 0 40px #a3f321, 0 0 80px #a3f321;
-  transition-delay: 0.5s;
-}
-
-.toggle-btn.active > .inner-circle,
-.toggle-btn1.active > .inner-circle,
-.toggle-btn2.active > .inner-circle,
-.toggle-btn3.active > .inner-circle {
-  margin-left: 40px;
-}
-
-/* Login form */
-#loginForm {
-  max-width: 400px;
-  margin: 100px auto 20px;
-  background: white;
-  padding: 30px 20px;
-  border-radius: 15px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-#loginForm input,
-#loginForm button {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 20px;
-  border-radius: 10px;
-  font-size: 1rem;
-}
-
-#loginForm input {
-  border: 1.5px solid #ccc;
-}
-
-#loginForm button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-#logoutBtn {
-  margin-top: 40px;
-  background: #666;
-  color: white;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 10px;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-#logoutBtn:hover {
-  opacity: 0.8;
-}
-h1 {
-  margin: 12px 0 0;
-  font-weight: 600;
-  color: #eee;
-  user-select: none;
-  pointer-events: none;
-  text-transform: uppercase;
-  font-size: clamp(1rem, 4vw, 1.5rem);
-}
-footer {
-  background-color: #121f3d;
-  color: #ccc;
-  text-align: center;
-  padding: 20px 15px;
-  font-size: 0.9rem;
-  border-top: 1px solid #444;
-  margin-top: 40px;
-  font-family: 'Segoe UI', sans-serif;
-}
-
-footer p {
-  margin: 5px 0;
-}
-
-@media (max-width: 480px) {
-  footer {
-    font-size: 0.8rem;
-    padding: 15px 10px;
+function loadTheme() {
+  const stored = localStorage.getItem("theme");
+  if (stored === "dark") {
+    toggleThemeCheckbox.checked = true;
+    applyTheme(true);
+  } else if (stored === "light") {
+    toggleThemeCheckbox.checked = false;
+    applyTheme(false);
+  } else {
+    // Par défaut système
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    toggleThemeCheckbox.checked = prefersDark;
+    applyTheme(prefersDark);
   }
 }
 
+toggleThemeCheckbox.addEventListener("change", () => {
+  applyTheme(toggleThemeCheckbox.checked);
+});
 
-/* Responsive sur tous types de téléphones */
-@media (max-width: 768px) {
-  /* Option 1 : Marge en haut du h1 */
-.progress h1 {
-  margin-top: 10px; /* espace au dessus du texte */
-  margin-bottom: 0;
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #eee;
-  user-select: none;
-  pointer-events: none;
-  text-transform: uppercase;
-}
+loadTheme();
 
-/* Option 2 : Espace sous l’icône */
-.icon1 {
-  margin-bottom: 30px; /* espace sous l'icône */
-  display: block; /* au cas où */
-  color: #fff;
-}
+// --- Gestion formulaire ajout programme ---
+const scheduleForm = document.getElementById("scheduleForm");
+const scheduleMsg = document.getElementById("scheduleMsg");
 
-  .wrapper {
-    flex-direction: column;
-    align-items: center;
-    height: auto;
-    padding: 20px 0;
+scheduleForm.addEventListener("submit", e => {
+  e.preventDefault();
+
+  const relay = parseInt(scheduleForm.relayNumber.value);
+  const action = scheduleForm.action.value;
+  const time = scheduleForm.time.value;
+
+  if (relay < 1 || relay > 8) {
+    scheduleMsg.textContent = "Le numéro du relais doit être entre 1 et 8.";
+    scheduleMsg.className = "text-red-500 mt-2";
+    return;
   }
 
-  .progress {
-    width: 90%;
-    max-width: 300px;
-    padding: 20px;
-    border-bottom: 1px solid white; /* ligne blanche sous chaque bloc */
+  if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
+    scheduleMsg.textContent = "Heure invalide, format HH:mm attendu.";
+    scheduleMsg.className = "text-red-500 mt-2";
+    return;
   }
 
-  /* On limite la largeur des boutons */
-  .toggle-btn, .toggle-btn1, .toggle-btn2, .toggle-btn3 {
-    width: 140px;    /* largeur fixe raisonnable */
-    height: 45px;
-    margin: 0 auto;
-    margin-bottom: 60px; 
-  }
+  const newSchedule = { relay, action, time };
 
-  .toggle-btn > .inner-circle,
-  .toggle-btn1 > .inner-circle,
-  .toggle-btn2 > .inner-circle,
-  .toggle-btn3 > .inner-circle {
-    width: 45px;
-    height: 45px;
-  }
-
-  .toggle-btn.active > .inner-circle,
-  .toggle-btn1.active > .inner-circle,
-  .toggle-btn2.active > .inner-circle,
-  .toggle-btn3.active > .inner-circle {
-    margin-left: 95px; /* 140 - 45 = 95 */
-  }
-
-  .progress h1 {
-    font-size: 1.3rem;
-  }
-  footer {
-    font-size: 0.8rem;
-    padding: 15px 10px;
-  }
-}
+  database.ref('schedules').push(newSchedule)
+    .then(() => {
+      scheduleMsg.textContent = "Programme ajouté avec succès !";
+      scheduleMsg.className = "text-green-500 mt-2";
+      scheduleForm.reset();
+    })
+    .catch(err => {
+      scheduleMsg.textContent = "Erreur ajout programme : " + err.message;
+      scheduleMsg.className = "text-red-500 mt-2";
+    });
+});
 
 
-/* Pour très petits écrans */
-@media (max-width: 400px) {
-  .wrapper {
-    flex-direction: column;
-    padding: 10px 0;
-  }
-
-  .progress {
-    width: 100%;
-    padding: 15px;
-    border-bottom: 1px solid white;
-  }
-
-  .toggle-btn, .toggle-btn1, .toggle-btn2, .toggle-btn3 {
-    width: 140px;  /* pas full width */
-    height: 50px;
-    margin: 0 auto;
-  }
-
-  .toggle-btn > .inner-circle,
-  .toggle-btn1 > .inner-circle,
-  .toggle-btn2 > .inner-circle,
-  .toggle-btn3 > .inner-circle {
-    width: 50px;
-    height: 50px;
-  }
-
-  .toggle-btn.active > .inner-circle,
-  .toggle-btn1.active > .inner-circle,
-  .toggle-btn2.active > .inner-circle,
-  .toggle-btn3.active > .inner-circle {
-    margin-left: 90px; /* 140 - 50 = 90 */
-  }
-
-  .progress h1 {
-    font-size: 1.4rem;
-  }
-}
-#logoutBtn {
-  background-color: #e53e3e;   /* rouge vif */
-  color: white;
-  border: none;
-  padding: 12px 30px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  box-shadow: 0 4px 8px rgba(229, 62, 62, 0.4);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-#logoutBtn:hover {
-  background-color: #c53030;   /* rouge plus foncé au survol */
-  box-shadow: 0 6px 12px rgba(197, 48, 48, 0.6);
-}
-
-#logoutBtn:active {
-  background-color: #9b2c2c;   /* rouge très foncé au clic */
-  box-shadow: none;
-}
-
-
-/* Ligne blanche verticale entre les toggles (uniquement si en row, pour plus grand écran) */
-@media (min-width: 769px) {
-  .progress:not(:last-child) {
-    border-right: 1px solid white;
-  }
-}
-
-
-  </style>
-</head>
-<body>
-
-  <!-- Login Form -->
-  <div id="loginForm">
-    <h2>Login</h2>
-    <input type="email" id="email" placeholder="Enter Email" required />
-    <input type="password" id="password" placeholder="Enter Password" required />
-    <button id="loginBtn">Login</button>
-  </div>
-
-  <!-- Dashboard -->
-  <div id="dashboard" style="display:none;">
-    <div class="wrapper">
-      <!-- Relay 1 -->
-      <div class="progress">
-        <a class="icon1"><i class="fas fa-4x fa-bath"></i></a>
-        <div class="toggle-btn" id="relay1Toggle">
-          <div class="inner-circle"></div>
-          <H1>DOUCHE</H1>
-        </div>
-      </div>
-      <!-- Relay 2 -->
-      <div class="progress">
-        <a class="icon1"><i class="fas fa-4x fa-utensils"></i></a>
-        <div class="toggle-btn1" id="relay2Toggle">
-          <div class="inner-circle"></div>
-          <H1>SALLE A MANGER</H1>
-        </div>
-      </div>
-      <!-- Relay 3 -->
-      <div class="progress">
-        <a class="icon1"><i class="fas fa-4x fa-tv"></i></a>
-        <div class="toggle-btn2" id="relay3Toggle">
-          <div class="inner-circle"></div>
-          <H1>SALON</H1>
-        </div>
-      </div>
-      <!-- Relay 4 -->
-      <div class="progress">
-        <a class="icon1"><i class="fas fa-4x fa-bed"></i></a>
-        <div class="toggle-btn3" id="relay4Toggle">
-          <div class="inner-circle"></div>
-          <H1>CHAMBRE</H1>
-        </div>
-      </div>
-    </div>
-    <button id="logoutBtn">QUITTER</button>
-  </div>
-  <!-- footer -->
-
-  <footer>
-  <p>© 2025 Rommy. Application développée avec passion pour le contrôle ESP32.</p>
-  <p>Conçue et codée par Rommy, ingénieur en IA et passionné de technologie.</p>
-  <p><center>By POWERTEC</center></p>
-</footer>
-
-
-  <!-- Firebase Logic -->
-  <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAJcmaVULTXVdwi0OX6TfJAaGGV3zQZGN0",
-    authDomain: "fin-etude-e51b2.firebaseapp.com",
-    databaseURL: "https://fin-etude-e51b2-default-rtdb.firebaseio.com",
-    projectId: "fin-etude-e51b2",
-    storageBucket: "fin-etude-e51b2.appspot.com",
-    messagingSenderId: "266327798549",
-    appId: "1:266327798549:web:f20ac04b94ab2d8a19ef1c",
-    measurementId: "G-FQV4XHD101"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-
-  const allowedEmail = "rommygerard3@gmail.com";
-  const allowedPassword = "Ronice0";
-
-  const loginForm = document.getElementById("loginForm");
-  const dashboard = document.getElementById("dashboard");
-  const loginBtn = document.getElementById("loginBtn");
-
-  loginBtn.addEventListener("click", () => {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-
-    if (email === allowedEmail && password === allowedPassword) {
-      firebase.auth().signInWithEmailAndPassword(email, password)
-        .then(() => {
-          loginForm.style.display = "none";
-          dashboard.style.display = "block";
-          initToggles();
-        })
-        .catch(e => alert("Firebase login failed: " + e.message));
-    } else {
-      alert("Invalid email or password.");
-    }
+// --- Chargement des relais ---
+function loadRelays() {
+  database.ref("relays").on("value", snapshot => {
+    const relays = snapshot.val() || {};
+    renderRelays(relays);
   });
+}
 
-  function initToggles() {
-    const relays = [
-      { id: 1, path: "relay1" },
-      { id: 2, path: "relay2" },
-      { id: 3, path: "relay3" },
-      { id: 4, path: "relay4" },
-    ];
+// --- Affichage relais ---
+function renderRelays(relays) {
+  relayGrid.innerHTML = "";
 
-    relays.forEach(relay => {
-      const toggle = document.getElementById(`relay${relay.id}Toggle`);
-      const ref = firebase.database().ref("/" + relay.path);
+  for (let i = 1; i <= 8; i++) {
+    const r = relays[i] || { name: `Relais ${i}`, state: false };
+    const icon = relayIcons[i - 1] || "fa-bolt";
 
-      ref.on("value", snap => {
-        const state = snap.val();
-        // Inversion de l'état : si state true => bouton éteint (pas actif)
-        toggle.classList.toggle("active", !state);
-        toggle.style.display = "block";
-      });
-
-      toggle.onclick = () => {
-        ref.get().then(snap => {
-          ref.set(!snap.val()); // Inversion logique à l’écriture
-        });
-      };
-    });
+    relayGrid.innerHTML += `
+      <div class="card bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+        <div class="flex justify-between mb-2">
+          <h4>${r.name}</h4>
+          <span class="${r.state ? 'text-green-500' : 'text-gray-400'}">${r.state ? 'ON' : 'OFF'}</span>
+        </div>
+        <div class="text-center text-4xl ${r.state ? 'text-yellow-400' : 'text-gray-500'}">
+          <i class="fas ${icon}"></i>
+        </div>
+        <div class="flex justify-between mt-4">
+          <button data-relay="${i}" data-action="toggle" class="btn-toggle bg-primary text-white px-4 py-2 rounded">
+            <i class="fas fa-power-off"></i>
+          </button>
+          <button data-relay="${i}" data-action="rename" class="bg-gray-300 p-2 rounded"><i class="fas fa-edit"></i></button>
+        </div>
+        <div class="mt-2 text-sm text-gray-500" id="relay-${i}-duration">Durée : 00:00:00</div>
+      </div>
+    `;
   }
+}
 
-  document.getElementById("logoutBtn").onclick = () => {
-    firebase.auth().signOut().then(() => {
-      dashboard.style.display = "none";
-      loginForm.style.display = "block";
-      document.getElementById("email").value = "";
-      document.getElementById("password").value = "";
+// --- Actions boutons relais ---
+function setupRelayActions() {
+  document.addEventListener("click", e => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+
+    const relay = parseInt(btn.dataset.relay);
+    const action = btn.dataset.action;
+
+    if (action === "toggle") toggleRelay(relay);
+    else if (action === "rename") renameRelay(relay);
+  });
+}
+
+// --- Basculer relais ---
+function toggleRelay(relay) {
+  const ref = database.ref("relays/" + relay);
+  ref.once("value").then(snapshot => {
+    const currentState = snapshot.val()?.state || false;
+    ref.update({
+      state: !currentState,
+      changedBy: auth.currentUser?.email || "inconnu",
+      lastChanged: firebase.database.ServerValue.TIMESTAMP
+    })
+    .then(() => console.log(`Relais ${relay} state changé à ${!currentState}`))
+    .catch(err => alert("Erreur update relais : " + err.message));
+  });
+}
+
+// --- Renommer relais ---
+function renameRelay(relay) {
+  const newName = prompt("Nouveau nom du relais ?");
+  if (newName) {
+    database.ref("relays/" + relay).update({ name: newName });
+  }
+}
+
+// --- Monitoring durée allumage + auto-extinction ---
+const relayUsage = {};
+
+function startUsageMonitoring() {
+  setInterval(() => {
+    database.ref("relays").once("value", snapshot => {
+      const relays = snapshot.val() || {};
+      const now = Date.now();
+
+      for (let i = 1; i <= 8; i++) {
+        const relay = relays[i];
+        if (!relay) continue;
+
+        if (relay.state) {
+          if (!relayUsage[i]) relayUsage[i] = now;
+          const diff = now - relayUsage[i];
+
+          if (diff > 5 * 60 * 60 * 1000) {  // 5h en ms
+            database.ref(`relays/${i}`).update({ state: false });
+            alert(`Relais ${i} éteint automatiquement après 5h.`);
+            relayUsage[i] = null;
+          }
+
+          const seconds = Math.floor(diff / 1000);
+          const el = document.getElementById(`relay-${i}-duration`);
+          if(el) el.textContent = "Durée : " + formatDuration(seconds);
+        } else {
+          relayUsage[i] = null;
+          const el = document.getElementById(`relay-${i}-duration`);
+          if(el) el.textContent = "Durée : 00:00:00";
+        }
+      }
     });
-  };
+  }, 1000);
+}
+
+function formatDuration(seconds) {
+  const h = String(Math.floor(seconds / 3600)).padStart(2, "0");
+  const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+  const s = String(seconds % 60).padStart(2, "0");
+  return `${h}:${m}:${s}`;
+}
+
+// --- Gestion des programmes horaires ---
+function setupScheduleSystem() {
+  if (!addScheduleBtn) return;
+
+  addScheduleBtn.addEventListener('click', () => {
+    const time = prompt("Heure au format HH:mm (ex: 19:00) ?");
+    const relay = parseInt(prompt("Numéro du relais (1-8) ?"));
+    const action = prompt("Action ('on' ou 'off') ?").toLowerCase();
+
+    if (!time || !relay || !['on','off'].includes(action)) {
+      alert("Données invalides !");
+      return;
+    }
+
+    const newSchedule = { time, relay, action };
+
+    database.ref('schedules').push(newSchedule)
+      .then(() => alert("Programme ajouté !"))
+      .catch(err => alert("Erreur ajout programme : " + err.message));
+  });
+}
+
+
 </script>
 
 </body>
