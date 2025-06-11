@@ -96,6 +96,160 @@
       color: #10b981;
       transform: scale(1.1);
     }
+
+
+
+    /* Bouton et panneau fixés en haut à droite */
+.theme-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+
+
+.menu-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* Bouton menu */
+.menu-button {
+  background-color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    
+  color: white;
+  padding: 0.5rem;
+  border-radius: 9999px;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Menu déroulant */
+.menu-panel {
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0;
+  min-width: 180px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.dark .menu-panel {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-item {
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.dark .menu-item {
+  color: #f3f4f6;
+}
+
+.menu-item:hover {
+  background-color: #f3f4f6;
+}
+
+.dark .menu-item:hover {
+  background-color: #374151;
+}
+
+/* Panneau thème */
+.theme-panel {
+  margin-top: 0.5rem;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+}
+
+.dark .theme-panel {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+.theme-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.theme-color-input {
+  width: 100%;
+  height: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.theme-apply-button {
+  background-color: #3b82f6;
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+}
+
+.theme-apply-button:hover {
+  background-color: #2563eb;
+}
+
+/* Info panels (à propos, sécurité) */
+.info-panel {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  max-width: 300px;
+  z-index: 900;
+  border: 1px solid #e5e7eb;
+}
+
+.dark .info-panel {
+  background: #1f2937;
+  border-color: #374151;
+  color: white;
+}
+
+.hidden {
+  display: none;
+}
+
+
+
+
   </style>
 </head>
 <body id="body" class="bg-gray-50 dark:bg-dark py-8 text-gray-800 dark:text-gray-100 transition-colors duration-300">
@@ -118,24 +272,32 @@
    
     
     <!-- Bouton en haut à droite -->
-<div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
-  <button id="toggleTheme" class="bg-yellow-400 hover:bg-yellow-500 text-white font-medium py-2 px-4 rounded-lg transition flex items-center">
-    <i class="fas fa-adjust mr-2"></i> Thème
+
+
+
+<!-- Bouton fixe en haut à droite avec menu -->
+<div class="menu-container">
+  <button id="menuToggle" class="menu-button" title="Menu">
+    <i class="fas fa-bars"></i>
   </button>
+
+  <!-- Menu déroulant -->
+  <div id="menuPanel" class="menu-panel hidden">
+    <ul class="menu-list">
+      <li><button id="openTheme" class="menu-item"><i class="fas fa-palette mr-2"></i> Thème</button></li>
+      <li><button id="openAbout" class="menu-item"><i class="fas fa-info-circle mr-2 "></i> À propos</button></li>
+      <li><button id="openSecurity" class="menu-item"><i class="fas fa-shield-alt mr-2"></i> Sécurité</button></li>
+    </ul>
+  </div>
+
+  <!-- Panneau de thème -->
+  <div id="themePanel" class="theme-panel hidden">
+    <h2 class="theme-title">Choisir une couleur</h2>
+    <input type="color" id="colorPicker" class="theme-color-input">
+    <button id="applyTheme" class="theme-apply-button">Appliquer</button>
+  </div>
 </div>
 
-<!-- Panneau de sélection de couleur -->
-<div id="themePanel" class="hidden fixed top-24 right-6 bg-white p-6 rounded-lg shadow-lg border z-50" style="min-width: 200px;">
-  <h2 class="text-lg font-semibold mb-2">Choisir la couleur du fond</h2>
-  <input type="color" id="colorPicker" class="w-full h-10 mb-4 cursor-pointer">
-  <button id="applyTheme" class="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded">Appliquer</button>
-</div>
-
-
-
-
-
-    
     <!-- Login Form -->
     <div id="loginForm" class="login-card bg-white rounded-2xl shadow-xl p-8 max-w-md mx-auto">
       <div class="text-center mb-8">
@@ -458,32 +620,58 @@
 
 
   //theme
-  const toggleThemeBtn = document.getElementById("toggleTheme");
-  const themePanel = document.getElementById("themePanel");
-  const colorPicker = document.getElementById("colorPicker");
-  const applyThemeBtn = document.getElementById("applyTheme");
+const menuBtn = document.getElementById("menuToggle");
+const menuPanel = document.getElementById("menuPanel");
+const themePanel = document.getElementById("themePanel");
+const aboutModal = document.getElementById("aboutModal");
+const securityModal = document.getElementById("securityModal");
 
-  // Ouvrir/fermer le panneau de thème
-  toggleThemeBtn.addEventListener("click", () => {
-    themePanel.classList.toggle("hidden");
-  });
+// Toggle menu
+menuBtn.addEventListener("click", () => {
+  menuPanel.classList.toggle("hidden");
+  themePanel.classList.add("hidden");
+  aboutModal.classList.add("hidden");
+  securityModal.classList.add("hidden");
+});
 
-  // Appliquer la couleur choisie
-  applyThemeBtn.addEventListener("click", () => {
-    const color = colorPicker.value;
-    document.body.style.background = color;
-    localStorage.setItem("customBackground", color);
-    themePanel.classList.add("hidden");
-  });
+// Ouvrir panneau thème
+document.getElementById("openTheme").addEventListener("click", () => {
+  themePanel.classList.toggle("hidden");
+  aboutModal.classList.add("hidden");
+  securityModal.classList.add("hidden");
+});
 
-  // Charger couleur si sauvegardée
-  window.addEventListener("DOMContentLoaded", () => {
-    const saved = localStorage.getItem("customBackground");
-    if (saved) {
-      document.body.style.background = saved;
-      colorPicker.value = saved;
-    }
-  });
+// Ouvrir À propos
+document.getElementById("openAbout").addEventListener("click", () => {
+  aboutModal.classList.toggle("hidden");
+  themePanel.classList.add("hidden");
+  securityModal.classList.add("hidden");
+});
+
+// Ouvrir sécurité
+document.getElementById("openSecurity").addEventListener("click", () => {
+  securityModal.classList.toggle("hidden");
+  themePanel.classList.add("hidden");
+  aboutModal.classList.add("hidden");
+});
+
+// Appliquer thème
+document.getElementById("applyTheme").addEventListener("click", () => {
+  const color = document.getElementById("colorPicker").value;
+  document.body.style.background = color;
+  localStorage.setItem("customBackground", color);
+  themePanel.classList.add("hidden");
+});
+
+// Charger couleur personnalisée
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("customBackground");
+  if (saved) {
+    document.body.style.background = saved;
+    document.getElementById("colorPicker").value = saved;
+  }
+});
+
 
 
 
