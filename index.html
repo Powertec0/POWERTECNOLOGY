@@ -1,692 +1,253 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
   <title>ESP32 Relay Control Dashboard</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-
-  <!--<script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://kit.fontawesome.com/your_kit_code.js" crossorigin="anonymous"></script>-->
-
-  <script>
-  tailwind.config = {
-    darkMode: 'class', // Ajout ici
-    theme: {
-      extend: {
-        colors: {
-          'primary': '#1e40af',
-          'secondary': '#3b82f6',
-          'success': '#10b981',
-          'danger': '#ef4444',
-          'warning': '#f59e0b',
-          'dark': '#1e293b',
-        }
-      }
-    }
-  }
-</script>
-
+  <!-- Font Awesome -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #f0f9ff 0%, hwb(204 88% 0%) 100%);
-      min-height: 100vh;
+    .dark .card-bg {
+      background-color: #374151;
+      color: #f3f4f6;
     }
-    
-    .relay-card {
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+    .dark .header-bg {
+      background-color: #1f2937;
     }
-    
-    .relay-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+    .dark .dashboard-bg {
+      background-color: #111827;
     }
-    
-    .status-indicator {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 8px;
+    .dark .footer-bg {
+      background-color: #1f2937;
+      color: #d1d5db;
     }
-    
-    .status-on {
-       background-color: #64748b;
-     
+    .dark .login-bg {
+      background-color: #374151;
+      color: #f3f4f6;
     }
-    
-    .status-off {
-      background-color: #10b981;
-      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    .dark .input-bg {
+      background-color: #4b5563;
+      color: #f9fafb;
+      border-color: #6b7280;
     }
-    
-    .toggle-btn {
-      transition: all 0.2s ease;
+    .dark .input-bg::placeholder {
+      color: #9ca3af;
     }
-    
-    .toggle-btn:active {
-      transform: scale(0.95);
+    .theme-toggle {
+      transition: transform 0.3s ease;
     }
-    
-    .login-card {
-      animation: fadeIn 0.5s ease-out;
-    }
-    
- 
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .power-icon {
-      transition: all 0.3s ease;
-    }
-    
-    .relay-on .power-icon {
-      color: #10b981;
+    .theme-toggle:hover {
       transform: scale(1.1);
     }
-
-
-
-    /* Bouton et panneau fixés en haut à droite */
-.theme-container {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-
-
-.menu-container {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-/* Bouton menu */
-.menu-button {
-  background-color: #10b981;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
-    
-  color: white;
-  padding: 0.5rem;
-  border-radius: 9999px;
-  font-size: 1rem;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Menu déroulant */
-.menu-panel {
-  margin-top: 0.5rem;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  padding: 0.5rem 0;
-  min-width: 180px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-}
-
-.dark .menu-panel {
-  background: #1f2937;
-  border-color: #374151;
-}
-
-.menu-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.menu-item {
-  background: none;
-  border: none;
-  width: 100%;
-  text-align: left;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  color: #374151;
-  cursor: pointer;
-}
-
-.dark .menu-item {
-  color: #f3f4f6;
-}
-
-.menu-item:hover {
-  background-color: #f3f4f6;
-}
-
-.dark .menu-item:hover {
-  background-color: #374151;
-}
-
-/* Panneau thème */
-.theme-panel {
-  margin-top: 0.5rem;
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  min-width: 200px;
-}
-
-.dark .theme-panel {
-  background-color: #1f2937;
-  border-color: #374151;
-}
-
-.theme-title {
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-}
-
-.theme-color-input {
-  width: 100%;
-  height: 2rem;
-  margin-bottom: 0.75rem;
-}
-
-.theme-apply-button {
-  background-color: #3b82f6;
-  color: white;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.375rem;
-  border: none;
-  cursor: pointer;
-}
-
-.theme-apply-button:hover {
-  background-color: #2563eb;
-}
-
-/* Info panels (à propos, sécurité) */
-.info-panel {
-  position: fixed;
-  top: 80px;
-  right: 20px;
-  background: white;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-  max-width: 300px;
-  z-index: 900;
-  border: 1px solid #e5e7eb;
-}
-
-.dark .info-panel {
-  background: #1f2937;
-  border-color: #374151;
-  color: white;
-}
-
-.hidden {
-  display: none;
-}
-
-
-
-
+    .toggle-animation {
+      transition: all 0.3s ease;
+    }
+    .blinking {
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    .countdown {
+      font-size: 0.8rem;
+      margin-top: 4px;
+      color: #f59e0b;
+    }
   </style>
 </head>
-<body id="body" class="bg-gray-50 dark:bg-dark py-8 text-gray-800 dark:text-gray-100 transition-colors duration-300">
-
-
-  <div class="container mx-auto px-4">
-
-    <!-- Header -->
-    <div class="text-center mb-10">
-      <div class="flex justify-center items-center mb-4">
-        <div class="bg-blue-100 p-3 rounded-full mr-4">
-          <i class="fas fa-microchip text-blue-600 text-3xl"></i>
-        </div>
-        <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Dashboard</h1>
-      </div>
-      <p class="text-gray-600 max-w-2xl mx-auto">
-        Controled your home
-      </p>
-    </div>
-   
-    
-    <!-- Bouton en haut à droite -->
-
-
-
-<!-- Bouton fixe en haut à droite avec menu -->
-<div class="menu-container">
-  <button id="menuToggle" class="menu-button" title="Menu">
-    <i class="fas fa-bars"></i>
-  </button>
-
-  <!-- Menu déroulant -->
-  <div id="menuPanel" class="menu-panel hidden">
-    <ul class="menu-list">
-      <li><button id="openTheme" class="menu-item"><i class="fas fa-palette mr-2"></i> Thème</button></li>
-      <li><button id="openAbout" class="menu-item"><i class="fas fa-info-circle mr-2 "></i> À propos</button></li>
-      <li><button id="openSecurity" class="menu-item"><i class="fas fa-shield-alt mr-2"></i> Sécurité</button></li>
-    </ul>
+<body class="bg-gray-100 min-h-screen flex flex-col dashboard-bg">
+  <!-- Theme toggle button -->
+  <div class="absolute top-4 right-4">
+    <button id="themeToggle" class="theme-toggle bg-gray-200 dark:bg-gray-700 p-2 rounded-full">
+      <i id="sunIcon" class="fas fa-sun text-yellow-500 text-xl"></i>
+      <i id="moonIcon" class="fas fa-moon text-indigo-300 text-xl hidden"></i>
+    </button>
   </div>
 
-  <!-- Panneau de thème -->
-  <div id="themePanel" class="theme-panel hidden">
-    <h2 class="theme-title">Choisir une couleur</h2>
-    <input type="color" id="colorPicker" class="theme-color-input">
-    <button id="applyTheme" class="theme-apply-button">Appliquer</button>
-  </div>
-</div>
+  <h1 class="text-3xl font-bold text-center text-blue-600 dark:text-blue-400 mt-12 mb-2"> Control Dashboard</h1>
+  <p class="text-center text-gray-600 dark:text-gray-300 mb-8">Control  home</p>
 
-    <!-- Login Form -->
-    <div id="loginForm" class="login-card bg-white rounded-2xl shadow-xl p-8 max-w-md mx-auto">
-      <div class="text-center mb-8">
-        <div class="bg-blue-100 p-4 rounded-full inline-block mb-4">
-          <i class="fas fa-lock text-blue-600 text-3xl"></i>
-        </div>
-        <h2 class="text-2xl font-bold text-gray-800">Secure Login</h2>
-        <p class="text-gray-600 mt-2">Enter your credentials to access the relay controls</p>
+  <!-- Login form -->
+  <div id="loginForm" class="max-w-sm mx-auto mt-4 p-6 rounded-xl shadow-md login-bg">
+    <div class="text-center mb-6">
+      <i class="fas fa-user-lock text-blue-500 text-4xl mb-3"></i>
+      <h2 class="text-2xl font-bold">Secure Login</h2>
+    </div>
+    
+    <div class="mb-4">
+      <div class="flex items-center mb-2">
+        <i class="fas fa-envelope text-blue-500 mr-2"></i>
+        <label for="email" class="block font-medium">Email</label>
       </div>
-      
-      <div class="space-y-4">
-        <div>
-          <label class="block text-gray-700 font-medium mb-2" for="email">Email</label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="fas fa-envelope text-gray-400"></i>
-            </div>
-            <input 
-              type="email" 
-              id="email" 
-              placeholder="Enter your email" 
-              class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-              value="abc@gmail.com"
-            >
-          </div>
-        </div>
-        
-        <div>
-          <label class="block text-gray-700 font-medium mb-2" for="password">Password</label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="fas fa-lock text-gray-400"></i>
-            </div>
-            <input 
-              type="password" 
-              id="password" 
-              placeholder="Enter your password" 
-              class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-              value="90009550"
-            >
-          </div>
-        </div>
-        
-        <button id="loginBtn" class="w-full bg-primary hover:bg-blue-800 text-white font-semibold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-[1.02] mt-6">
-          <i class="fas fa-sign-in-alt mr-2"></i> Login to Dashboard
-        </button>
+      <input type="email" id="email" placeholder="Enter Email" class="w-full p-3 border border-gray-300 rounded-lg input-bg" required />
+    </div>
+    
+    <div class="mb-6">
+      <div class="flex items-center mb-2">
+        <i class="fas fa-lock text-blue-500 mr-2"></i>
+        <label for="password" class="block font-medium">Password</label>
       </div>
+      <input type="password" id="password" placeholder="Enter Password" class="w-full p-3 border border-gray-300 rounded-lg input-bg" required />
+    </div>
+    
+    <button id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg flex items-center justify-center">
+      <i class="fas fa-sign-in-alt mr-2"></i> Login
+    </button>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" class="hidden mt-6 flex-grow flex flex-col items-center w-full">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-4 mb-6 w-full max-w-6xl">
+
+      <!-- Generate 8 relay cards with icons and countdown -->
+      <script>
+        const relayIcons = [
+          "fa-lightbulb",    // Relay 1 - Light
+          "fa-plug",         // Relay 2 - Plug
+          "fa-fan",          // Relay 3 - Fan
+          "fa-tv",           // Relay 4 - TV
+          "fa-thermometer-half", // Relay 5 - Heater
+          "fa-desktop",      // Relay 6 - Computer
+          "fa-coffee",       // Relay 7 - Coffee machine
+          "fa-snowflake"     // Relay 8 - AC
+        ];
+        
+        const relayColors = [
+          "text-yellow-400", // Light
+          "text-blue-400",    // Plug
+          "text-green-400",   // Fan
+          "text-purple-400",  // TV
+          "text-red-400",     // Heater
+          "text-indigo-400",  // Computer
+          "text-brown-400",   // Coffee machine
+          "text-cyan-400"    // AC
+        ];
+        
+        document.write([...Array(8).keys()].map(i => `
+          <div class="card-bg p-6 rounded-xl shadow-md w-full text-center border border-gray-200 dark:border-gray-600">
+            <div class="flex justify-center mb-3">
+              <i class="fas ${relayIcons[i]} text-3xl ${relayColors[i]}"></i>
+            </div>
+            <h2 class="text-xl font-semibold mb-3">Relay ${i + 1}</h2>
+            <div class="text-gray-600 dark:text-gray-300 text-lg mb-2 flex items-center justify-center">
+              <i id="statusIcon${i + 1}" class="fas fa-circle text-gray-400 mr-2"></i>
+              <span id="status${i + 1}">OFF</span>
+            </div>
+            <div id="countdown${i + 1}" class="countdown hidden"></div>
+            <button id="btn${i + 1}" class="toggle-animation w-full py-2 mt-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center justify-center">
+              <i class="fas fa-power-off mr-2"></i> Toggle
+            </button>
+            <div class="mt-3">
+              <label class="text-sm">Auto-off timer:</label>
+              <select id="timer${i + 1}" class="mt-1 p-1 border rounded input-bg text-sm">
+                <option value="0">Disabled</option>
+                <option value="5">5 minutes</option>
+                <option value="15">15 minutes</option>
+                <option value="30">30 minutes</option>
+                <option value="60">1 hour</option>
+              </select>
+            </div>
+          </div>
+        `).join(''));
+      </script>
     </div>
 
+    <div class="flex flex-col items-center space-y-4 mb-8">
+      <button id="allOffBtn" class="toggle-animation bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg flex items-center">
+        <i class="fas fa-power-off mr-2"></i> All OFF
+      </button>
+      <button id="logoutBtn" class="toggle-animation bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-6 rounded-lg flex items-center">
+        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+      </button>
+    </div>
+  </div>
 
-
-   
-
-    
-    <!-- Dashboard -->
-    <div id="dashboard" class="hidden">
-      <!-- Controls Header -->
-      <div class="bg-white rounded-2xl shadow-md p-6 mb-8 flex flex-col md:flex-row justify-between items-center">
-        <div class="flex items-center mb-4 md:mb-0">
-          <div class="bg-blue-100 p-3 rounded-full mr-4">
-            <i class="fas fa-sliders-h text-blue-600 text-xl"></i>
+  <footer class="footer-bg text-center text-sm py-4 mt-auto">
+    <div class="max-w-6xl mx-auto px-4">
+      <!-- Mini weather and network info card -->
+      <div class="flex flex-col sm:flex-row justify-between items-center mb-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-lg">
+        <div class="flex items-center mb-2 sm:mb-0">
+          <i class="fas fa-cloud-sun text-2xl text-yellow-400 mr-2"></i>
+          <div>
+            <div class="font-semibold">Paris, FR</div>
+            <div id="weatherInfo" class="text-xs">24°C, Sunny</div>
           </div>
-          <h2 class="text-2xl font-bold text-gray-800">Relay Controls</h2>
         </div>
-        
-        <div class="flex flex-wrap gap-3">
-          <button id="allOnBtn" class="bg-success hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition flex items-center">
-            <i class="fas fa-power-off mr-2"></i> All ON
-          </button>
-          <button id="allOffBtn" class="bg-danger hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition flex items-center">
-            <i class="fas fa-power-off mr-2"></i> All OFF
-          </button>
-          <button id="logoutBtn" class="bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition flex items-center">
-            <i class="fas fa-sign-out-alt mr-2"></i> Logout
-          </button>
-        </div>
-      </div>
-      
-      <!-- Relay Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <!-- Relay 1 -->
-        <div class="relay-card bg-white rounded-xl p-6">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <h3 class="text-xl font-semibold text-gray-800">Relay 1</h3>
-              <div class="flex items-center mt-1">
-                <span class="status-indicator status-off" id="indicator1"></span>
-                <span class="text-gray-600" id="status1">OFF</span>
-              </div>
-            </div>
-            <div class="bg-blue-100 p-2 rounded-lg">
-              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
-            </div>
+        <div class="flex items-center">
+          <i class="fas fa-wifi text-2xl text-green-400 mr-2"></i>
+          <div>
+            <div class="font-semibold">Network</div>
+            <div id="networkInfo" class="text-xs">Connected, 85% signal</div>
           </div>
-          <button id="btn1" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
-            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
-          </button>
-        </div>
-        
-        <!-- Relay 2 -->
-        <div class="relay-card bg-white rounded-xl p-6">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <h3 class="text-xl font-semibold text-gray-800">Relay 2</h3>
-              <div class="flex items-center mt-1">
-                <span class="status-indicator status-off" id="indicator2"></span>
-                <span class="text-gray-600" id="status2">OFF</span>
-              </div>
-            </div>
-            <div class="bg-blue-100 p-2 rounded-lg">
-              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
-            </div>
-          </div>
-          <button id="btn2" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
-            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
-          </button>
-        </div>
-        
-        <!-- Relay 3 -->
-        <div class="relay-card bg-white rounded-xl p-6">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <h3 class="text-xl font-semibold text-gray-800">Relay 3</h3>
-              <div class="flex items-center mt-1">
-                <span class="status-indicator status-off" id="indicator3"></span>
-                <span class="text-gray-600" id="status3">OFF</span>
-              </div>
-            </div>
-            <div class="bg-blue-100 p-2 rounded-lg">
-              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
-            </div>
-          </div>
-          <button id="btn3" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
-            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
-          </button>
-        </div>
-        
-        <!-- Relay 4 -->
-        <div class="relay-card bg-white rounded-xl p-6">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <h3 class="text-xl font-semibold text-gray-800">Relay 4</h3>
-              <div class="flex items-center mt-1">
-                <span class="status-indicator status-off" id="indicator4"></span>
-                <span class="text-gray-600" id="status4">OFF</span>
-              </div>
-            </div>
-            <div class="bg-blue-100 p-2 rounded-lg">
-              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
-            </div>
-          </div>
-          <button id="btn4" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
-            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
-          </button>
-        </div>
-        
-        <!-- Relay 5 -->
-        <div class="relay-card bg-white rounded-xl p-6">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <h3 class="text-xl font-semibold text-gray-800">Relay 5</h3>
-              <div class="flex items-center mt-1">
-                <span class="status-indicator status-off" id="indicator5"></span>
-                <span class="text-gray-600" id="status5">OFF</span>
-              </div>
-            </div>
-            <div class="bg-blue-100 p-2 rounded-lg">
-              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
-            </div>
-          </div>
-          <button id="btn5" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
-            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
-          </button>
-        </div>
-        
-        <!-- Relay 6 -->
-        <div class="relay-card bg-white rounded-xl p-6">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <h3 class="text-xl font-semibold text-gray-800">Relay 6</h3>
-              <div class="flex items-center mt-1">
-                <span class="status-indicator status-off" id="indicator6"></span>
-                <span class="text-gray-600" id="status6">OFF</span>
-              </div>
-            </div>
-            <div class="bg-blue-100 p-2 rounded-lg">
-              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
-            </div>
-          </div>
-          <button id="btn6" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
-            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
-          </button>
-        </div>
-        
-        <!-- Relay 7 -->
-        <div class="relay-card bg-white rounded-xl p-6">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <h3 class="text-xl font-semibold text-gray-800">Relay 7</h3>
-              <div class="flex items-center mt-1">
-                <span class="status-indicator status-off" id="indicator7"></span>
-                <span class="text-gray-600" id="status7">OFF</span>
-              </div>
-            </div>
-            <div class="bg-blue-100 p-2 rounded-lg">
-              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
-            </div>
-          </div>
-          <button id="btn7" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
-            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
-          </button>
-        </div>
-        
-        <!-- Relay 8 -->
-        <div class="relay-card bg-white rounded-xl p-6">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <h3 class="text-xl font-semibold text-gray-800">Relay 8</h3>
-              <div class="flex items-center mt-1">
-                <span class="status-indicator status-off" id="indicator8"></span>
-                <span class="text-gray-600" id="status8">OFF</span>
-              </div>
-            </div>
-            <div class="bg-blue-100 p-2 rounded-lg">
-              <i class="fas fa-lightbulb text-blue-600 text-xl"></i>
-            </div>
-          </div>
-          <button id="btn8" class="toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 rounded-lg transition flex items-center justify-center">
-            <i class="fas fa-power-off power-icon mr-2"></i> Toggle Relay
-          </button>
         </div>
       </div>
       
-      <!-- System Status -->
-      <div class="bg-white rounded-2xl shadow-md p-6">
-        <div class="flex items-center mb-4">
-          <div class="bg-blue-100 p-3 rounded-full mr-4">
-            <i class="fas fa-heartbeat text-blue-600 text-xl"></i>
-          </div>
-          <h2 class="text-2xl font-bold text-gray-800">System Status</h2>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="bg-blue-50 rounded-xl p-5">
-            <div class="flex items-center">
-              <div class="bg-blue-100 p-3 rounded-lg mr-4">
-                <i class="fas fa-microchip text-blue-600 text-xl"></i>
-              </div>
-              <div>
-                <p class="text-gray-600">Controller</p>
-                <p class="text-lg font-semibold">ESP32</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="bg-green-50 rounded-xl p-5">
-            <div class="flex items-center">
-              <div class="bg-green-100 p-3 rounded-lg mr-4">
-                <i class="fas fa-plug text-green-600 text-xl"></i>
-              </div>
-              <div>
-                <p class="text-gray-600">Relays Actif</p>
-                <p class="text-lg font-semibold"><span id="activeRelays">0</span>/8</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="bg-purple-50 rounded-xl p-5">
-            <div class="flex items-center">
-              <div class="bg-purple-100 p-3 rounded-lg mr-4">
-                <i class="fas fa-network-wired text-purple-600 text-xl"></i>
-              </div>
-              <div>
-                <p class="text-gray-600">Connection</p>
-                <p class="text-lg font-semibold text-green-600">Online</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="flex justify-center space-x-4 mb-2">
+        <i class="fas fa-microchip text-blue-400"></i>
+        <i class="fas fa-wifi text-green-400"></i>
+        <i class="fas fa-cloud text-indigo-400"></i>
       </div>
+      <p>Created by Tech StudyCell</p>
+      <p class="text-xs mt-2 text-gray-500 dark:text-gray-400">Secure IoT Control System</p>
     </div>
-    
-    <!-- Footer -->
-    <footer class="mt-12 text-center text-gray-600">
-      <div class="flex justify-center space-x-6 mb-4">
-        <a href="#" class="text-gray-500 hover:text-primary transition">
-          <i class="fab fa-github text-xl"></i>
-        </a>
-        <a href="#" class="text-gray-500 hover:text-primary transition">
-          <i class="fab fa-youtube text-xl"></i>
-        </a>
-        <a href="#" class="text-gray-500 hover:text-primary transition">
-          <i class="fab fa-twitter text-xl"></i>
-        </a>
-      </div>
-      <p>Created by <span class="font-semibold text-primary">POWERTEC</span> | SMART HOME</p>
-    </footer>
-  </div>
-  
+  </footer>
+
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-  
+
   <script>
     // Firebase config
-   // Firebase config
     const firebaseConfig = {
-    apiKey: "AIzaSyB1Dfgal-Lp5fs5ClMMMhlDTGxzMxS4f5E",
-    authDomain: "proacademia-134e6.firebaseapp.com",
-    databaseURL: "https://proacademia-134e6-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "proacademia-134e6",
-    storageBucket: "proacademia-134e6.firebasestorage.app",
-    messagingSenderId: "753251437128",
-    appId: "1:753251437128:web:88b88844e0ed2e8125a67d",
-    measurementId: "G-KGRHW9L9C9"
-};
+      apiKey: "AIzaSyBNRVmDiHdTlKJCqmt5RuxZg8621nuOWn8",
+      authDomain: "smart-home-f85c8.firebaseapp.com",
+      databaseURL: "https://smart-home-f85c8-default-rtdb.firebaseio.com",
+      projectId: "smart-home-f85c8",
+      storageBucket: "smart-home-f85c8.firebasestorage.app",
+      messagingSenderId: "443940160330",
+      appId: "1:443940160330:web:9a360e66dbff433cceb7b3",
+      measurementId: "G-R6CVTQ15CB"
+    };
 
     firebase.initializeApp(firebaseConfig);
 
-
-  //theme
-const menuBtn = document.getElementById("menuToggle");
-const menuPanel = document.getElementById("menuPanel");
-const themePanel = document.getElementById("themePanel");
-const aboutModal = document.getElementById("aboutModal");
-const securityModal = document.getElementById("securityModal");
-
-// Toggle menu
-menuBtn.addEventListener("click", () => {
-  menuPanel.classList.toggle("hidden");
-  themePanel.classList.add("hidden");
-  aboutModal.classList.add("hidden");
-  securityModal.classList.add("hidden");
-});
-
-// Ouvrir panneau thème
-document.getElementById("openTheme").addEventListener("click", () => {
-  themePanel.classList.toggle("hidden");
-  aboutModal.classList.add("hidden");
-  securityModal.classList.add("hidden");
-});
-
-// Ouvrir À propos
-document.getElementById("openAbout").addEventListener("click", () => {
-  aboutModal.classList.toggle("hidden");
-  themePanel.classList.add("hidden");
-  securityModal.classList.add("hidden");
-});
-
-// Ouvrir sécurité
-document.getElementById("openSecurity").addEventListener("click", () => {
-  securityModal.classList.toggle("hidden");
-  themePanel.classList.add("hidden");
-  aboutModal.classList.add("hidden");
-});
-
-// Appliquer thème
-document.getElementById("applyTheme").addEventListener("click", () => {
-  const color = document.getElementById("colorPicker").value;
-  document.body.style.background = color;
-  localStorage.setItem("customBackground", color);
-  themePanel.classList.add("hidden");
-});
-
-// Charger couleur personnalisée
-window.addEventListener("DOMContentLoaded", () => {
-  const saved = localStorage.getItem("customBackground");
-  if (saved) {
-    document.body.style.background = saved;
-    document.getElementById("colorPicker").value = saved;
-  }
-});
-
-
-
-
-
-
-    // Predefined login credentials
     const allowedEmail = "rommygerard3@gmail.com";
     const allowedPassword = "Rommy0";
 
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const sunIcon = document.getElementById('sunIcon');
+    const moonIcon = document.getElementById('moonIcon');
+    const htmlElement = document.documentElement;
+
+    // Check for saved theme preference
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    if (currentTheme === 'dark') {
+      htmlElement.classList.add('dark');
+      sunIcon.classList.add('hidden');
+      moonIcon.classList.remove('hidden');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      htmlElement.classList.toggle('dark');
+      sunIcon.classList.toggle('hidden');
+      moonIcon.classList.toggle('hidden');
+      
+      const newTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
+      localStorage.setItem('theme', newTheme);
+    });
+
+    // Login functionality
     const loginForm = document.getElementById("loginForm");
     const dashboard = document.getElementById("dashboard");
     const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const allOnBtn = document.getElementById("allOnBtn");
-    const allOffBtn = document.getElementById("allOffBtn");
 
     loginBtn.addEventListener("click", () => {
       const email = document.getElementById("email").value.trim();
@@ -697,119 +258,172 @@ window.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Check hardcoded credentials first
-      if(email === allowedEmail && password === allowedPassword){
-        // Sign in with Firebase
+      // For demo purposes only - in real apps, never store credentials like this
+      if (email === allowedEmail && password === allowedPassword) {
         firebase.auth().signInWithEmailAndPassword(email, password)
-          .then(userCredential => {
-            console.log("Signed in as", userCredential.user.email);
-            loginForm.classList.add("hidden");
+          .then(() => {
+            loginForm.style.display = "none";
             dashboard.classList.remove("hidden");
             startRelayControl();
+            updateWeatherInfo();
+            updateNetworkInfo();
           })
-          .catch(error => {
-            alert("Firebase login failed: " + error.message);
-          });
+          .catch(error => alert("Firebase login failed: " + error.message));
       } else {
         alert("Invalid email or password.");
       }
     });
 
-    function startRelayControl() {
-      const db = firebase.database();
+    // Countdown timers for each relay
+    const countdownTimers = {};
+    
+    function startCountdown(relayId, minutes) {
+  if (countdownTimers[relayId]) {
+    clearInterval(countdownTimers[relayId]);
+  }
 
-      const relays = [
-        { id: 1, path: "relay1" },
-        { id: 2, path: "relay2" },
-        { id: 3, path: "relay3" },
-        { id: 4, path: "relay4" },
-        { id: 5, path: "relay5" },
-        { id: 6, path: "relay6" },
-        { id: 7, path: "relay7" },
-        { id: 8, path: "relay8" }
-      ];
+  let seconds = minutes * 60;
+  const countdownElement = document.getElementById(`countdown${relayId}`);
+  countdownElement.classList.remove('hidden');
 
-      relays.forEach(relay => {
-       const statusText = document.getElementById(`status${relay.id}`);
-      const indicator = document.getElementById(`indicator${relay.id}`);
-      const toggleButton = document.getElementById(`btn${relay.id}`);
-      const relayRef = db.ref("/" + relay.path);
+  countdownTimers[relayId] = setInterval(() => {
+    seconds--;
 
-
-        relayRef.on("value", (snapshot) => {
-          const state = snapshot.val();
-          statusText.innerText = state ? "ON" : "OFF";
-          
-          if (state) {
-            statusText.classList.remove("text-gray-600");
-            statusText.classList.add("text-green-600");
-            indicator.classList.remove("status-on");
-            indicator.classList.add("status-off");
-            toggleButton.classList.remove("bg-gray-200", "hover:bg-gray-300", "text-gray-800");
-            toggleButton.classList.add("bg-green-100", "hover:bg-green-200", "text-green-800");
-            toggleButton.parentElement.classList.add("relay-on");
-          } else {
-            statusText.classList.remove("text-green-600");
-            statusText.classList.add("text-gray-600");
-            indicator.classList.remove("status-off");
-            indicator.classList.add("status-on");
-            toggleButton.classList.remove("bg-green-100", "hover:bg-green-200", "text-green-800");
-            toggleButton.classList.add("bg-gray-200", "hover:bg-gray-300", "text-gray-800");
-            toggleButton.parentElement.classList.remove("relay-on");
-          }
-          
-          // Update active relays count
-          updateActiveRelays();
-        });
-
-        toggleButton.onclick = () => {
-          relayRef.get().then(snap => {
-            relayRef.set(!snap.val());
-          });
-        };
-      });
-
-      function updateActiveRelays() {
-  let activeCount = 0;
-  relays.forEach(relay => {
-    const statusText = document.getElementById(`status${relay.id}`);
-    if (statusText.innerText === "ON") activeCount++;
-  });
-  document.getElementById("activeRelays").innerText = activeCount;
-}
-
-
-      allOnBtn.onclick = () => {
-        relays.forEach(relay => {
-          db.ref("/" + relay.path).set(true);
-        });
-      };
-
-      allOffBtn.onclick = () => {
-        relays.forEach(relay => {
-          db.ref("/" + relay.path).set(false);
-        });
-      };
+    if (seconds <= 0) {
+      clearInterval(countdownTimers[relayId]);
+      countdownElement.classList.add('hidden');
+      firebase.database().ref(`/relay${relayId}`).set(false);
+      return;
     }
 
-    logoutBtn.onclick = () => {
-      firebase.auth().signOut()
-        .then(() => {
-          dashboard.classList.add("hidden");
-          loginForm.classList.remove("hidden");
-          document.getElementById("email").value = "";
-          document.getElementById("password").value = "";
-        })
-        .catch(error => {
-          alert("Logout failed: " + error.message);
-        });
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    countdownElement.textContent = `Auto-off in ${mins}:${secs < 10 ? '0' + secs : secs}`;
+  }, 1000);
+}
+
+function startRelayControl() {
+  const db = firebase.database();
+  const relays = Array.from({ length: 8 }, (_, i) => ({ id: i + 1, path: `relay${i + 1}` }));
+
+  relays.forEach(relay => {
+    const statusText = document.getElementById(`status${relay.id}`);
+    const statusIcon = document.getElementById(`statusIcon${relay.id}`);
+    const toggleButton = document.getElementById(`btn${relay.id}`);
+    const countdownElement = document.getElementById(`countdown${relay.id}`);
+    const timerSelect = document.getElementById(`timer${relay.id}`);
+    const relayRef = db.ref("/" + relay.path);
+
+    relayRef.on("value", (snapshot) => {
+      const state = snapshot.val();
+      statusText.innerText = state ? "ON" : "OFF";
+      statusText.className = state ? "text-green-500 font-medium" : "text-gray-600 dark:text-gray-300";
+      statusIcon.className = state ? "fas fa-circle text-green-500 mr-2 blinking" : "fas fa-circle text-gray-400 mr-2";
+
+      toggleButton.classList.toggle("bg-green-600", state);
+      toggleButton.classList.toggle("bg-blue-600", !state);
+      toggleButton.classList.toggle("hover:bg-green-700", state);
+      toggleButton.classList.toggle("hover:bg-blue-700", !state);
+
+      const icon = toggleButton.querySelector('i');
+      icon.classList.toggle("fa-bolt", state);
+      icon.classList.toggle("fa-power-off", !state);
+
+      if (!state) {
+        countdownElement.classList.add('hidden');
+        if (countdownTimers[relay.id]) {
+          clearInterval(countdownTimers[relay.id]);
+          delete countdownTimers[relay.id];
+        }
+      }
+    });
+
+    toggleButton.onclick = () => {
+      relayRef.get().then(snap => relayRef.set(!snap.val()));
     };
 
-     if (localStorage.getItem("theme") === "dark" || (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
-    document.documentElement.classList.add("dark");
-  } else {
-    document.documentElement.classList.remove("dark");
+    timerSelect.addEventListener('change', () => {
+      const minutes = parseInt(timerSelect.value);
+      if (minutes > 0) {
+        relayRef.get().then(snap => {
+          if (snap.val()) {
+            startCountdown(relay.id, minutes);
+          }
+        });
+      } else if (countdownTimers[relay.id]) {
+        clearInterval(countdownTimers[relay.id]);
+        countdownElement.classList.add('hidden');
+      }
+    });
+  });
+
+  document.getElementById("allOffBtn").onclick = () => {
+    relays.forEach(relay => {
+      db.ref("/" + relay.path).set(false);
+      if (countdownTimers[relay.id]) {
+        clearInterval(countdownTimers[relay.id]);
+        document.getElementById(`countdown${relay.id}`).classList.add('hidden');
+      }
+    });
+  };
+}
+
+// Weather info simulation
+function updateWeatherInfo() {
+  const weatherConditions = ["Sunny", "Cloudy", "Rainy", "Stormy", "Foggy"];
+  const temperatures = [22, 24, 18, 20, 19, 25];
+  const weatherElement = document.getElementById('weatherInfo');
+
+  setInterval(() => {
+    const temp = temperatures[Math.floor(Math.random() * temperatures.length)];
+    const condition = weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
+    weatherElement.textContent = `${temp}°C, ${condition}`;
+  }, 10000);
+}
+
+// Network info simulation
+function updateNetworkInfo() {
+  const networkStatuses = ["Excellent", "Good", "Fair", "Weak"];
+  const networkElement = document.getElementById('networkInfo');
+
+  setInterval(() => {
+    const strength = Math.floor(Math.random() * 4);
+    const signal = 70 + Math.floor(Math.random() * 30);
+    networkElement.textContent = `${networkStatuses[strength]}, ${signal}% signal`;
+  }, 8000);
+}
+
+// Logout
+document.getElementById("logoutBtn").onclick = () => {
+  firebase.auth().signOut()
+    .then(() => {
+      dashboard.classList.add("hidden");
+      loginForm.style.display = "block";
+      document.getElementById("email").value = "";
+      document.getElementById("password").value = "";
+
+      Object.keys(countdownTimers).forEach(timerId => {
+        clearInterval(countdownTimers[timerId]);
+      });
+    })
+    .catch(error => alert("Logout failed: " + error.message));
+};
+
+// Simulate some relays ON on load (demo mode)
+setTimeout(() => {
+  if (document.getElementById("status1")) {
+    [1, 3, 6].forEach(i => {
+      document.getElementById(`status${i}`).innerText = "ON";
+      document.getElementById(`status${i}`).className = "text-green-500 font-medium";
+      document.getElementById(`statusIcon${i}`).className = "fas fa-circle text-green-500 mr-2 blinking";
+      const btn = document.getElementById(`btn${i}`);
+      btn.classList.add("bg-green-600", "hover:bg-green-700");
+      btn.classList.remove("bg-blue-600", "hover:bg-blue-700");
+      btn.querySelector('i').className = "fas fa-bolt mr-2";
+    });
   }
+}, 1000);
+
   </script>
 </body>
 </html>
