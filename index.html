@@ -1,59 +1,80 @@
 <!DOCTYPE html>
 <html lang="en" class="light">
+
 <head>
   <meta charset="UTF-8" />
   <title>ESP32 Relay Control Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome -->
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-  
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
   <style>
     .dark .card-bg {
       background-color: #374151;
       color: #f3f4f6;
     }
+
     .dark .header-bg {
       background-color: #1f2937;
     }
+
     .dark .dashboard-bg {
       background-color: #111827;
     }
+
     .dark .footer-bg {
       background-color: #1f2937;
       color: #d1d5db;
     }
+
     .dark .login-bg {
       background-color: #374151;
       color: #f3f4f6;
     }
+
     .dark .input-bg {
       background-color: #4b5563;
       color: #f9fafb;
       border-color: #6b7280;
     }
+
     .dark .input-bg::placeholder {
       color: #9ca3af;
     }
+
     .theme-toggle {
       transition: transform 0.3s ease;
     }
+
     .theme-toggle:hover {
       transform: scale(1.1);
     }
+
     .toggle-animation {
       transition: all 0.3s ease;
     }
+
     .blinking {
       animation: blink 1s infinite;
     }
+
     @keyframes blink {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+
+      100% {
+        opacity: 1;
+      }
     }
+
     .countdown {
       font-size: 0.8rem;
       margin-top: 4px;
@@ -61,6 +82,7 @@
     }
   </style>
 </head>
+
 <body class="bg-gray-100 min-h-screen flex flex-col dashboard-bg">
   <!-- Theme toggle button -->
   <div class="absolute top-4 right-4">
@@ -71,7 +93,7 @@
   </div>
 
   <h1 class="text-3xl font-bold text-center text-blue-600 dark:text-blue-400 mt-12 mb-2"> Control Dashboard</h1>
-  <p class="text-center text-gray-600 dark:text-gray-300 mb-8">Control  home</p>
+  <p class="text-center text-gray-600 dark:text-gray-300 mb-8">Control home</p>
 
   <!-- Login form -->
   <div id="loginForm" class="max-w-sm mx-auto mt-4 p-6 rounded-xl shadow-md login-bg">
@@ -79,24 +101,27 @@
       <i class="fas fa-user-lock text-blue-500 text-4xl mb-3"></i>
       <h2 class="text-2xl font-bold">Secure Login</h2>
     </div>
-    
+
     <div class="mb-4">
       <div class="flex items-center mb-2">
         <i class="fas fa-envelope text-blue-500 mr-2"></i>
         <label for="email" class="block font-medium">Email</label>
       </div>
-      <input type="email" id="email" placeholder="Enter Email" class="w-full p-3 border border-gray-300 rounded-lg input-bg" required />
+      <input type="email" id="email" placeholder="Enter Email"
+        class="w-full p-3 border border-gray-300 rounded-lg input-bg" required />
     </div>
-    
+
     <div class="mb-6">
       <div class="flex items-center mb-2">
         <i class="fas fa-lock text-blue-500 mr-2"></i>
         <label for="password" class="block font-medium">Password</label>
       </div>
-      <input type="password" id="password" placeholder="Enter Password" class="w-full p-3 border border-gray-300 rounded-lg input-bg" required />
+      <input type="password" id="password" placeholder="Enter Password"
+        class="w-full p-3 border border-gray-300 rounded-lg input-bg" required />
     </div>
-    
-    <button id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg flex items-center justify-center">
+
+    <button id="loginBtn"
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg flex items-center justify-center">
       <i class="fas fa-sign-in-alt mr-2"></i> Login
     </button>
   </div>
@@ -117,7 +142,7 @@
           "fa-coffee",       // Relay 7 - Coffee machine
           "fa-snowflake"     // Relay 8 - AC
         ];
-        
+
         const relayColors = [
           "text-yellow-400", // Light
           "text-blue-400",    // Plug
@@ -128,41 +153,44 @@
           "text-brown-400",   // Coffee machine
           "text-cyan-400"    // AC
         ];
-        
-        document.write([...Array(5).keys()].map(i => `
-          <div class="card-bg p-6 rounded-xl shadow-md w-full text-center border border-gray-200 dark:border-gray-600">
-            <div class="flex justify-center mb-3">
-              <i class="fas ${relayIcons[i]} text-3xl ${relayColors[i]}"></i>
-            </div>
-            <h2 class="text-xl font-semibold mb-3">Relay ${i + 1}</h2>
-            <div class="text-gray-600 dark:text-gray-300 text-lg mb-2 flex items-center justify-center">
-              <i id="statusIcon${i + 1}" class="fas fa-circle text-gray-400 mr-2"></i>
-              <span id="status${i + 1}">OFF</span>
-            </div>
-            <div id="countdown${i + 1}" class="countdown hidden"></div>
-            <button id="btn${i + 1}" class="toggle-animation w-full py-2 mt-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center justify-center">
-              <i class="fas fa-power-off mr-2"></i> Toggle
-            </button>
-            <div class="mt-3">
-              <label class="text-sm">Auto-off timer:</label>
-              <select id="timer${i + 1}" class="mt-1 p-1 border rounded input-bg text-sm">
-                <option value="0">Disabled</option>
-                <option value="0.5">30 secondees</option>
-                <option value="15">15 minutes</option>
-                <option value="30">30 minutes</option>
-                <option value="60">1 hour</option>
-              </select>
-            </div>
-          </div>
-        `).join(''));
+
+        document.write([...Array(8).keys()].map(i => `
+  <div class="card-bg p-6 rounded-xl shadow-md w-full text-center border border-gray-200 dark:border-gray-600">
+    <div class="flex justify-center mb-3">
+      <i class="fas ${relayIcons[i]} text-3xl ${relayColors[i]}"></i>
+    </div>
+    <h2 class="text-xl font-semibold mb-3">Relay ${i + 1}</h2>
+    <div class="text-gray-600 dark:text-gray-300 text-lg mb-2 flex items-center justify-center">
+      <i id="statusIcon${i + 1}" class="fas fa-circle text-gray-400 mr-2"></i>
+      <span id="status${i + 1}">OFF</span>
+    </div>
+    <div id="countdown${i + 1}" class="countdown hidden"></div>
+    <button id="btn${i + 1}" class="toggle-animation w-full py-2 mt-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center justify-center">
+      <i class="fas fa-power-off mr-2"></i> Toggle
+    </button>
+    <div class="mt-3">
+      <label class="text-sm">Auto-off timer:</label>
+      <select id="timer${i + 1}" class="mt-1 p-1 border rounded input-bg text-sm">
+        <option value="0">Disabled</option>
+        <option value="0.5">30 secondes</option>
+        <option value="15">15 minutes</option>
+        <option value="30">30 minutes</option>
+        <option value="60">1 hour</option>
+      </select>
+    </div>
+  </div>
+`).join(''));
+
       </script>
     </div>
 
     <div class="flex flex-col items-center space-y-4 mb-8">
-      <button id="allOffBtn" class="toggle-animation bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg flex items-center">
+      <button id="allOffBtn"
+        class="toggle-animation bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg flex items-center">
         <i class="fas fa-power-off mr-2"></i> All OFF
       </button>
-      <button id="logoutBtn" class="toggle-animation bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-6 rounded-lg flex items-center">
+      <button id="logoutBtn"
+        class="toggle-animation bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-6 rounded-lg flex items-center">
         <i class="fas fa-sign-out-alt mr-2"></i> Logout
       </button>
     </div>
@@ -171,7 +199,8 @@
   <footer class="footer-bg text-center text-sm py-4 mt-auto">
     <div class="max-w-6xl mx-auto px-4">
       <!-- Mini weather and network info card -->
-      <div class="flex flex-col sm:flex-row justify-between items-center mb-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-lg">
+      <div
+        class="flex flex-col sm:flex-row justify-between items-center mb-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-lg">
         <div class="flex items-center mb-2 sm:mb-0">
           <i class="fas fa-cloud-sun text-2xl text-yellow-400 mr-2"></i>
           <div>
@@ -187,7 +216,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="flex justify-center space-x-4 mb-2">
         <i class="fas fa-microchip text-blue-400"></i>
         <i class="fas fa-wifi text-green-400"></i>
@@ -240,7 +269,7 @@
       htmlElement.classList.toggle('dark');
       sunIcon.classList.toggle('hidden');
       moonIcon.classList.toggle('hidden');
-      
+
       const newTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
       localStorage.setItem('theme', newTheme);
     });
@@ -277,154 +306,155 @@
 
     // Countdown timers for each relay
     const countdownTimers = {};
-    
+
     function startCountdown(relayId, minutes) {
-  if (countdownTimers[relayId]) {
-    clearInterval(countdownTimers[relayId]);
-  }
+      if (countdownTimers[relayId]) {
+        clearInterval(countdownTimers[relayId]);
+      }
 
-  let seconds = minutes * 60;
-  const countdownElement = document.getElementById(`countdown${relayId}`);
-  countdownElement.classList.remove('hidden');
+      let seconds = minutes * 60;
+      const countdownElement = document.getElementById(`countdown${relayId}`);
+      countdownElement.classList.remove('hidden');
 
-  countdownTimers[relayId] = setInterval(() => {
-    seconds--;
+      countdownTimers[relayId] = setInterval(() => {
+        seconds--;
 
-    if (seconds <= 0) {
-      clearInterval(countdownTimers[relayId]);
-      countdownElement.classList.add('hidden');
-      firebase.database().ref(`/relay${relayId}`).set(false);
-      return;
+        if (seconds <= 0) {
+          clearInterval(countdownTimers[relayId]);
+          countdownElement.classList.add('hidden');
+          firebase.database().ref(`/relay${relayId}`).set(false);
+          return;
+        }
+
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        countdownElement.textContent = `Auto-off in ${mins}:${secs < 10 ? '0' + secs : secs}`;
+      }, 1000);
     }
 
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    countdownElement.textContent = `Auto-off in ${mins}:${secs < 10 ? '0' + secs : secs}`;
-  }, 1000);
-}
+    function startRelayControl() {
+      const db = firebase.database();
+      const relays = Array.from({ length: 8 }, (_, i) => ({ id: i + 1, path: `relay${i + 1}` }));
 
-function startRelayControl() {
-  const db = firebase.database();
-  const relays = Array.from({ length: 8 }, (_, i) => ({ id: i + 1, path: `relay${i + 1}` }));
+      relays.forEach(relay => {
+        const statusText = document.getElementById(`status${relay.id}`);
+        const statusIcon = document.getElementById(`statusIcon${relay.id}`);
+        const toggleButton = document.getElementById(`btn${relay.id}`);
+        const countdownElement = document.getElementById(`countdown${relay.id}`);
+        const timerSelect = document.getElementById(`timer${relay.id}`);
+        const relayRef = db.ref("/" + relay.path);
 
-  relays.forEach(relay => {
-    const statusText = document.getElementById(`status${relay.id}`);
-    const statusIcon = document.getElementById(`statusIcon${relay.id}`);
-    const toggleButton = document.getElementById(`btn${relay.id}`);
-    const countdownElement = document.getElementById(`countdown${relay.id}`);
-    const timerSelect = document.getElementById(`timer${relay.id}`);
-    const relayRef = db.ref("/" + relay.path);
+        relayRef.on("value", (snapshot) => {
+          const state = snapshot.val();
+          statusText.innerText = state ? "ON" : "OFF";
+          statusText.className = state ? "text-green-500 font-medium" : "text-gray-600 dark:text-gray-300";
+          statusIcon.className = state ? "fas fa-circle text-green-500 mr-2 blinking" : "fas fa-circle text-gray-400 mr-2";
 
-    relayRef.on("value", (snapshot) => {
-      const state = snapshot.val();
-      statusText.innerText = state ? "ON" : "OFF";
-      statusText.className = state ? "text-green-500 font-medium" : "text-gray-600 dark:text-gray-300";
-      statusIcon.className = state ? "fas fa-circle text-green-500 mr-2 blinking" : "fas fa-circle text-gray-400 mr-2";
+          toggleButton.classList.toggle("bg-green-600", state);
+          toggleButton.classList.toggle("bg-blue-600", !state);
+          toggleButton.classList.toggle("hover:bg-green-700", state);
+          toggleButton.classList.toggle("hover:bg-blue-700", !state);
 
-      toggleButton.classList.toggle("bg-green-600", state);
-      toggleButton.classList.toggle("bg-blue-600", !state);
-      toggleButton.classList.toggle("hover:bg-green-700", state);
-      toggleButton.classList.toggle("hover:bg-blue-700", !state);
+          const icon = toggleButton.querySelector('i');
+          icon.classList.toggle("fa-bolt", state);
+          icon.classList.toggle("fa-power-off", !state);
 
-      const icon = toggleButton.querySelector('i');
-      icon.classList.toggle("fa-bolt", state);
-      icon.classList.toggle("fa-power-off", !state);
-
-      if (!state) {
-        countdownElement.classList.add('hidden');
-        if (countdownTimers[relay.id]) {
-          clearInterval(countdownTimers[relay.id]);
-          delete countdownTimers[relay.id];
-        }
-      }
-    });
-
-    toggleButton.onclick = () => {
-      relayRef.get().then(snap => relayRef.set(!snap.val()));
-    };
-
-    timerSelect.addEventListener('change', () => {
-      const minutes = parseInt(timerSelect.value);
-      if (minutes > 0) {
-        relayRef.get().then(snap => {
-          if (snap.val()) {
-            startCountdown(relay.id, minutes);
+          if (!state) {
+            countdownElement.classList.add('hidden');
+            if (countdownTimers[relay.id]) {
+              clearInterval(countdownTimers[relay.id]);
+              delete countdownTimers[relay.id];
+            }
           }
         });
-      } else if (countdownTimers[relay.id]) {
-        clearInterval(countdownTimers[relay.id]);
-        countdownElement.classList.add('hidden');
-      }
-    });
-  });
 
-  document.getElementById("allOffBtn").onclick = () => {
-    relays.forEach(relay => {
-      db.ref("/" + relay.path).set(false);
-      if (countdownTimers[relay.id]) {
-        clearInterval(countdownTimers[relay.id]);
-        document.getElementById(`countdown${relay.id}`).classList.add('hidden');
-      }
-    });
-  };
-}
+        toggleButton.onclick = () => {
+          relayRef.get().then(snap => relayRef.set(!snap.val()));
+        };
 
-// Weather info simulation
-function updateWeatherInfo() {
-  const weatherConditions = ["Sunny", "Cloudy", "Rainy", "Stormy", "Foggy"];
-  const temperatures = [22, 24, 18, 20, 19, 25];
-  const weatherElement = document.getElementById('weatherInfo');
-
-  setInterval(() => {
-    const temp = temperatures[Math.floor(Math.random() * temperatures.length)];
-    const condition = weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
-    weatherElement.textContent = `${temp}°C, ${condition}`;
-  }, 10000);
-}
-
-// Network info simulation
-function updateNetworkInfo() {
-  const networkStatuses = ["Excellent", "Good", "Fair", "Weak"];
-  const networkElement = document.getElementById('networkInfo');
-
-  setInterval(() => {
-    const strength = Math.floor(Math.random() * 4);
-    const signal = 70 + Math.floor(Math.random() * 30);
-    networkElement.textContent = `${networkStatuses[strength]}, ${signal}% signal`;
-  }, 8000);
-}
-
-// Logout
-document.getElementById("logoutBtn").onclick = () => {
-  firebase.auth().signOut()
-    .then(() => {
-      dashboard.classList.add("hidden");
-      loginForm.style.display = "block";
-      document.getElementById("email").value = "";
-      document.getElementById("password").value = "";
-
-      Object.keys(countdownTimers).forEach(timerId => {
-        clearInterval(countdownTimers[timerId]);
+        timerSelect.addEventListener('change', () => {
+          const minutes = parseInt(timerSelect.value);
+          if (minutes > 0) {
+            relayRef.get().then(snap => {
+              if (snap.val()) {
+                startCountdown(relay.id, minutes);
+              }
+            });
+          } else if (countdownTimers[relay.id]) {
+            clearInterval(countdownTimers[relay.id]);
+            countdownElement.classList.add('hidden');
+          }
+        });
       });
-    })
-    .catch(error => alert("Logout failed: " + error.message));
-};
 
-// Simulate some relays ON on load (demo mode)
-setTimeout(() => {
-  if (document.getElementById("status1")) {
-    [1, 3, 6].forEach(i => {
-      document.getElementById(`status${i}`).innerText = "ON";
-      document.getElementById(`status${i}`).className = "text-green-500 font-medium";
-      document.getElementById(`statusIcon${i}`).className = "fas fa-circle text-green-500 mr-2 blinking";
-      const btn = document.getElementById(`btn${i}`);
-      btn.classList.add("bg-green-600", "hover:bg-green-700");
-      btn.classList.remove("bg-blue-600", "hover:bg-blue-700");
-      btn.querySelector('i').className = "fas fa-bolt mr-2";
-    });
-  }
-}, 1000);
+      document.getElementById("allOffBtn").onclick = () => {
+        relays.forEach(relay => {
+          db.ref("/" + relay.path).set(false);
+          if (countdownTimers[relay.id]) {
+            clearInterval(countdownTimers[relay.id]);
+            document.getElementById(`countdown${relay.id}`).classList.add('hidden');
+          }
+        });
+      };
+    }
+
+    // Weather info simulation
+    function updateWeatherInfo() {
+      const weatherConditions = ["Sunny", "Cloudy", "Rainy", "Stormy", "Foggy"];
+      const temperatures = [22, 24, 18, 20, 19, 25];
+      const weatherElement = document.getElementById('weatherInfo');
+
+      setInterval(() => {
+        const temp = temperatures[Math.floor(Math.random() * temperatures.length)];
+        const condition = weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
+        weatherElement.textContent = `${temp}°C, ${condition}`;
+      }, 10000);
+    }
+
+    // Network info simulation
+    function updateNetworkInfo() {
+      const networkStatuses = ["Excellent", "Good", "Fair", "Weak"];
+      const networkElement = document.getElementById('networkInfo');
+
+      setInterval(() => {
+        const strength = Math.floor(Math.random() * 4);
+        const signal = 70 + Math.floor(Math.random() * 30);
+        networkElement.textContent = `${networkStatuses[strength]}, ${signal}% signal`;
+      }, 8000);
+    }
+
+    // Logout
+    document.getElementById("logoutBtn").onclick = () => {
+      firebase.auth().signOut()
+        .then(() => {
+          dashboard.classList.add("hidden");
+          loginForm.style.display = "block";
+          document.getElementById("email").value = "";
+          document.getElementById("password").value = "";
+
+          Object.keys(countdownTimers).forEach(timerId => {
+            clearInterval(countdownTimers[timerId]);
+          });
+        })
+        .catch(error => alert("Logout failed: " + error.message));
+    };
+
+    // Simulate some relays ON on load (demo mode)
+    setTimeout(() => {
+      if (document.getElementById("status1")) {
+        [1, 3, 6].forEach(i => {
+          document.getElementById(`status${i}`).innerText = "ON";
+          document.getElementById(`status${i}`).className = "text-green-500 font-medium";
+          document.getElementById(`statusIcon${i}`).className = "fas fa-circle text-green-500 mr-2 blinking";
+          const btn = document.getElementById(`btn${i}`);
+          btn.classList.add("bg-green-600", "hover:bg-green-700");
+          btn.classList.remove("bg-blue-600", "hover:bg-blue-700");
+          btn.querySelector('i').className = "fas fa-bolt mr-2";
+        });
+      }
+    }, 1000);
 
   </script>
 </body>
+
 </html>
